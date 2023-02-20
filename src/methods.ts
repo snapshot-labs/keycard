@@ -23,7 +23,7 @@ const getKey = async (key: string): Promise<Key | null> => {
   }
 };
 
-const getActiveKeysWithSpace = async (app: string) => {
+const getActiveKeysWithApp = async (app: string) => {
   const keys = await db.queryAsync(
     `SELECT k.key, d.total as day_total, m.total as month_total  FROM \`keys\` k
       LEFT JOIN reqs_daily d ON d.key = id
@@ -55,7 +55,7 @@ export const increaseCount = async (key: string, app: string) => {
 
 export const getKeys = async (app: string) => {
   try {
-    const activeKeys = await getActiveKeysWithSpace(app);
+    const activeKeys = await getActiveKeysWithApp(app);
     const result = {
       [app]: {
         active: activeKeys.map((key: any) => key.key),

@@ -10,6 +10,6 @@ export const updateRequestTotal = async (key: number) => {
         ON DUPLICATE KEY UPDATE total = total + 1;
     `;
 
-  const result = await db.queryAsync(sql, [key, key, key]);
-  return result.affectedRows > 0;
+  await db.queryAsync(sql, [key, key, key]);
+  return true;
 };
