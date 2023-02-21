@@ -1,8 +1,7 @@
 {
   "limits": {
     "snapshot-hub": {
-      "daily": 100e3,
-      "monthly": 100e3
+      "monthly": 2e6
     }
   }
 }

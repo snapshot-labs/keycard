@@ -1,4 +1,4 @@
-# SnapKeys API
+# Keycard API
 
 This API is responsible for managing keys and counts for all snapshot APIs
 

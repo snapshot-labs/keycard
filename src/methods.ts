@@ -25,8 +25,7 @@ const getKey = async (key: string): Promise<Key | null> => {
 
 const getActiveKeysWithApp = async (app: string) => {
   const keys = await db.queryAsync(
-    `SELECT k.key, d.total as day_total, m.total as month_total  FROM \`keys\` k
-      LEFT JOIN reqs_daily d ON d.key = id AND d.day = DATE_FORMAT(CURRENT_TIMESTAMP, '%d-%m-%Y') 
+    `SELECT k.key, m.total as month_total  FROM \`keys\` k
       LEFT JOIN reqs_monthly m ON m.key = id AND m.month = DATE_FORMAT(CURRENT_TIMESTAMP, '%m-%Y')
       WHERE app = ? AND active = 1`,
     [app]
@@ -34,7 +33,7 @@ const getActiveKeysWithApp = async (app: string) => {
   return keys;
 };
 
-export const increaseCount = async (key: string, app: string) => {
+export const increaseTotal = async (key: string, app: string) => {
   try {
     const keyData: Key | null = await getKey(key);
 
@@ -57,9 +56,6 @@ export const getKeys = async (app: string) => {
     const result = {
       [app]: {
         active: activeKeys.map((key: any) => key.key),
-        restricted_daily: activeKeys
-          .filter((key: any) => key.day_total >= limits[app].daily)
-          .map((key: any) => key.key),
         restricted_monthly: activeKeys
           .filter((key: any) => key.month_total >= limits[app].monthly)
           .map((key: any) => key.key)

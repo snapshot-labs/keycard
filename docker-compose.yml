@@ -9,7 +9,7 @@ services:
       - '3306:3306'
     environment:
       - MYSQL_ROOT_PASSWORD=default_password
-      - MYSQL_DATABASE=snapkeys
+      - MYSQL_DATABASE=keycard
     volumes:
       - mysql:/var/lib/mysql
 volumes:
