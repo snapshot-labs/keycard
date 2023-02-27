@@ -1,35 +1,38 @@
 CREATE TABLE `keys` (
-  id INT AUTO_INCREMENT primary key NOT NULL,
-  `key` VARCHAR(32) NOT NULL UNIQUE DEFAULT (UPPER(MD5(RAND()))),
+  `key` VARCHAR(256) NOT NULL UNIQUE,
   owner VARCHAR(64) NOT NULL,
   name VARCHAR(32) NOT NULL,
-  app VARCHAR(32) NOT NULL, 
   created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   active BOOLEAN NOT NULL DEFAULT TRUE,
-  INDEX app (app),
-  INDEX owner (owner)
+  PRIMARY KEY (`key`),
+  INDEX owner (owner),
+  INDEX created (created)
 );
 
 CREATE TABLE reqs (
-  `key` INT NOT NULL UNIQUE,
+  `key` VARCHAR(256) NOT NULL,
+  app VARCHAR(32) NOT NULL,
+  total INT(12) NOT NULL DEFAULT 0,
   last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  total INT UNSIGNED NOT NULL DEFAULT 0,
-  FOREIGN KEY (`key`) REFERENCES `keys`(id)
+  PRIMARY KEY (`key`, app),
+  INDEX total (total)
 );
 
 CREATE TABLE reqs_daily (
-  `key` INT NOT NULL,
+  `key` VARCHAR(256) NOT NULL,
+  app VARCHAR(32) NOT NULL,
   day VARCHAR(32) NOT NULL,
-  total INT UNSIGNED NOT NULL DEFAULT 0,
-  PRIMARY KEY (`key`, day),
-  FOREIGN KEY (`key`) REFERENCES `keys`(id)
+  total INT(12) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`key`, day, app),
+  INDEX total (total)
 );
 
 CREATE TABLE reqs_monthly (
-  `key` INT NOT NULL,
+  `key` VARCHAR(256) NOT NULL,
+  app VARCHAR(32) NOT NULL,
   month VARCHAR(32) NOT NULL,
-  total INT UNSIGNED NOT NULL DEFAULT 0,
-  PRIMARY KEY (`key`, month),
-  FOREIGN KEY (`key`) REFERENCES `keys`(id)
+  total INT(12) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`key`, month, app),
+  INDEX total (total)
 );

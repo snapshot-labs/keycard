@@ -1,13 +1,13 @@
 import db from './helpers/mysql';
-import { updateRequestTotal } from './writer';
+import { updateTotal } from './writer';
 import { limits } from './config.json';
 
+const apps = Object.keys(limits);
+
 type Key = {
-  id: number;
   key: string;
   owner: string;
   name: string;
-  app: string;
   created: string;
   updated: string;
   active: number;
@@ -15,7 +15,7 @@ type Key = {
 
 const getKey = async (key: string): Promise<Key | null> => {
   try {
-    const [keyData] = await db.queryAsync(`SELECT * FROM \`keys\` WHERE \`key\` = ?`, [key]);
+    const [keyData] = await db.queryAsync('SELECT * FROM `keys` WHERE `key` = ?', [key]);
     return keyData;
   } catch (e) {
     console.log(e);
@@ -23,25 +23,27 @@ const getKey = async (key: string): Promise<Key | null> => {
   }
 };
 
-const getActiveKeysWithApp = async (app: string) => {
+const getActiveKeys = async (app: string) => {
   const keys = await db.queryAsync(
-    `SELECT k.key, m.total as month_total  FROM \`keys\` k
-      LEFT JOIN reqs_monthly m ON m.key = id AND m.month = DATE_FORMAT(CURRENT_TIMESTAMP, '%m-%Y')
-      WHERE app = ? AND active = 1`,
+    `
+      SELECT k.key, m.total as month_total
+      FROM \`keys\` k
+      LEFT JOIN reqs_monthly m ON m.key = k.key AND m.month = DATE_FORMAT(CURRENT_TIMESTAMP, '%m-%Y')
+      WHERE app = ? AND active = 1
+    `,
     [app]
   );
   return keys;
 };
 
-export const increaseTotal = async (key: string, app: string) => {
+export const logReq = async (key: string, app: string) => {
   try {
     const keyData: Key | null = await getKey(key);
 
-    if (!keyData) return Promise.reject('Key does not exist');
+    if (!keyData?.key) return Promise.reject('Key does not exist');
     if (keyData?.active === 0) return Promise.reject('Key is not active');
-    if (keyData?.app !== app) return Promise.reject('Key does not belong to this app');
-
-    const success: boolean = await updateRequestTotal(keyData.id);
+    if (apps.includes(app) === false) return Promise.reject('App is not allowed');
+    const success: boolean = await updateTotal(keyData.key, app);
 
     return { success };
   } catch (e) {
@@ -52,7 +54,8 @@ export const increaseTotal = async (key: string, app: string) => {
 
 export const getKeys = async (app: string) => {
   try {
-    const activeKeys = await getActiveKeysWithApp(app);
+    if (apps.includes(app) === false) return Promise.reject('App is not allowed');
+    const activeKeys = await getActiveKeys(app);
     const result = {
       [app]: {
         active: activeKeys.map((key: any) => key.key),

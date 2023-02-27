@@ -2,7 +2,7 @@ import express from 'express';
 import { name as packageName, version as packageVersion } from '../package.json';
 import { rpcError, rpcSuccess } from './helpers/utils';
 import { appAuthChecker } from './helpers/auth';
-import { getKeys, increaseTotal } from './methods';
+import { getKeys, logReq } from './methods';
 
 const router = express.Router();
 
@@ -21,7 +21,7 @@ router.post('/', appAuthChecker, async (req, res) => {
   if (!method) return rpcError(res, 500, 'missing method', id);
   try {
     let result: any = {};
-    if (method === 'increase_total') result = await increaseTotal(params.key, params.app);
+    if (method === 'log_req') result = await logReq(params.key, params.app);
     if (method === 'get_keys') result = await getKeys(params.app);
 
     return rpcSuccess(res, result, id);
