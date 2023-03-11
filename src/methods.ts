@@ -41,8 +41,8 @@ export const logReq = async (key: string, app: string) => {
     const keyData: Key | null = await getKey(key);
 
     if (!keyData?.key) return Promise.reject('Key does not exist');
-    if (keyData?.active === 0) return Promise.reject('Key is not active');
-    if (apps.includes(app) === false) return Promise.reject('App is not allowed');
+    if (!keyData?.active) return Promise.reject('Key is not active');
+    if (!apps.includes(app)) return Promise.reject('App is not allowed');
     const success: boolean = await updateTotal(keyData.key, app);
 
     return { success };
@@ -54,7 +54,7 @@ export const logReq = async (key: string, app: string) => {
 
 export const getKeys = async (app: string) => {
   try {
-    if (apps.includes(app) === false) return Promise.reject('App is not allowed');
+    if (!apps.includes(app)) return Promise.reject('App is not allowed');
     const activeKeys = await getActiveKeys(app);
     const result = {
       [app]: {

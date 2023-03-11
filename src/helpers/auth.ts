@@ -1,6 +1,6 @@
 import { rpcError } from './utils';
 
-const APPS_SECRET = process.env.APPS_SECRET || '';
+const APPS_SECRET = process.env.SECRET || '';
 
 export const appAuthChecker = async (req, res, next) => {
   const { id = null } = req.body;
