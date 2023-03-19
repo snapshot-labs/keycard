@@ -1,11 +1,12 @@
 CREATE TABLE `keys` (
-  `key` VARCHAR(256) NOT NULL UNIQUE,
+  `key` VARCHAR(256) DEFAULT NULL,
   owner VARCHAR(64) NOT NULL,
   name VARCHAR(32) NOT NULL,
   created INT(11) DEFAULT (UNIX_TIMESTAMP()),
   updated INT(11) DEFAULT (UNIX_TIMESTAMP()),
   active BOOLEAN NOT NULL DEFAULT TRUE,
-  PRIMARY KEY (`key`),
+  PRIMARY KEY (`owner`),
+  INDEX `key` (`key`),
   INDEX owner (owner),
   INDEX created (created)
 );

@@ -1,8 +1,8 @@
 import express from 'express';
 import { name as packageName, version as packageVersion } from '../package.json';
 import { rpcError, rpcSuccess } from './helpers/utils';
-import { appAuthChecker } from './helpers/auth';
-import { getKeys, logReq } from './methods';
+import { authChecker } from './helpers/auth';
+import { getKeys, logReq, generateKey } from './methods';
 
 const router = express.Router();
 
@@ -15,15 +15,14 @@ router.get('/', async (req, res) => {
   });
 });
 
-router.post('/', appAuthChecker, async (req, res) => {
+router.post('/', authChecker, async (req, res) => {
   const { id = null, method, params = {} } = req.body;
-  console.log('[Received] method:', method, 'app:', params.app);
   if (!method) return rpcError(res, 500, 'missing method', id);
   try {
     let result: any = {};
     if (method === 'log_req') result = await logReq(params.key, params.app);
     if (method === 'get_keys') result = await getKeys(params.app);
-
+    if (method === 'generate_key') result = await generateKey(params);
     return rpcSuccess(res, result, id);
   } catch (e) {
     console.log(e);

@@ -15,3 +15,9 @@ export const updateTotal = async (key: string, app: string) => {
   await db.queryAsync(sql, [key, app, key, app, key, app]);
   return true;
 };
+
+export const updateKey = async (key: string, owner: string) => {
+  const sql = 'UPDATE `keys` k SET k.key = ?,  WHERE owner = ?';
+  await db.queryAsync(sql, [key, owner]);
+  return true;
+};
