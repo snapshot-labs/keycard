@@ -35,14 +35,59 @@ yarn dev
 
 This should start the service to be listening on port 8888.
 
-### Running Tests
+## Using the API
 
-Before running tests, ensure you have MySQL server running (see getting started guide for some pointer to do this).
-
-Next, run:
+### get_keys
 
 ```sh
-yarn test
+curl --location 'http://localhost:3002/' \
+--header 'accept: application/json' \
+--header 'content-type: application/json' \
+--header 'secret: <APP_SECRET>' \
+--data '{
+    "jsonrpc": "2.0",
+    "method": "get_keys",
+    "params": {
+        "app": "snapshot-hub"
+    },
+    "id": "123456789"
+}'
 ```
 
-This will run all tests.
+### log_req
+
+```sh
+curl --location 'http://localhost:3002/' \
+--header 'accept: application/json' \
+--header 'content-type: application/json' \
+--header 'secret: <APP_SECRET>' \
+--data '{
+    "jsonrpc": "2.0",
+    "method": "log_req",
+    "params": {
+        "key": "<API_KEY>",
+        "app": "snapshot-hub"
+    },
+    "id": "123456789"
+}'
+```
+
+### generate_key
+
+- Make sure to whitelist the `owner` and `name` in the `keys` table before generating a key.
+- Go to <https://app.mycrypto.com/sign-message> and sign the message `generateKey` with the `owner` address.
+- copy the signature and use it in the `sig` param.
+
+```sh
+curl --location 'http://localhost:3002/' \
+--header 'accept: application/json' \
+--header 'content-type: application/json' \
+--data '{
+    "jsonrpc": "2.0",
+    "method": "log_req",
+    "params": 
+        "sig": "<SIGNATURE>",
+    },
+    "id": "123456789"
+}'
+```
