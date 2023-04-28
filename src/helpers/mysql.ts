@@ -10,6 +10,8 @@ bluebird.promisifyAll([Pool, Connection]);
 
 const db: any = mysql.createPool({
   ...config,
+  host: config.hosts?.[0].name,
+  port: config.hosts?.[0].port,
   connectionLimit,
   multipleStatements: true,
   connectTimeout: 60e3,
