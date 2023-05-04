@@ -1,5 +1,17 @@
 version: '3.8'
 services:
+  keycard:
+    build: .
+    ports:
+      - "3002:3002"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - mysql
+
   mysql:
     image: mysql:8.0
     command: --default-authentication-plugin=mysql_native_password
@@ -8,10 +20,11 @@ services:
     ports:
       - '3306:3306'
     environment:
-      - MYSQL_ROOT_PASSWORD=default_password
-      - MYSQL_DATABASE=keycard
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
     volumes:
       - mysql:/var/lib/mysql
+
 volumes:
   mysql:
     driver: local

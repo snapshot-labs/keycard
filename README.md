@@ -33,7 +33,17 @@ Finally, to run the service you do:
 yarn dev
 ```
 
-This should start the service to be listening on port 8888.
+This should start the service to be listening on port 3002.
+
+## Getting Started (Docker)
+
+To run the service in a docker container, you can use the docker-compose file in the root of the repo. To start the service, run:
+
+```sh
+docker compose up
+```
+
+This will start the service listening on port 3002 and all necessary dependencies.
 
 ## Using the API
 
