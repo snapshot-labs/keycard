@@ -85,8 +85,8 @@ curl --location 'http://localhost:3007/' \
 --data '{
     "jsonrpc": "2.0",
     "method": "generate_key",
-    "params": 
-        "sig": "<SIGNATURE>",
+    "params": {
+        "sig": "<SIGNATURE>"
     },
     "id": "123456789"
 }'
