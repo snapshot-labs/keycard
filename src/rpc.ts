@@ -23,6 +23,8 @@ router.post('/', authChecker, async (req, res) => {
     if (method === 'log_req') result = await logReq(params.key, params.app);
     if (method === 'get_keys') result = await getKeys(params.app);
     if (method === 'generate_key') result = await generateKey(params);
+
+    if (result.error) return rpcError(res, result.code || 500, result.error, id);
     return rpcSuccess(res, result, id);
   } catch (e) {
     console.log(e);

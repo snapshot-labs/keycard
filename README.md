@@ -40,7 +40,7 @@ This should start the service to be listening on port 8888.
 ### get_keys
 
 ```sh
-curl --location 'http://localhost:3002/' \
+curl --location 'http://localhost:3007/' \
 --header 'accept: application/json' \
 --header 'content-type: application/json' \
 --header 'secret: <APP_SECRET>' \
@@ -57,7 +57,7 @@ curl --location 'http://localhost:3002/' \
 ### log_req
 
 ```sh
-curl --location 'http://localhost:3002/' \
+curl --location 'http://localhost:3007/' \
 --header 'accept: application/json' \
 --header 'content-type: application/json' \
 --header 'secret: <APP_SECRET>' \
@@ -79,12 +79,12 @@ curl --location 'http://localhost:3002/' \
 - copy the signature and use it in the `sig` param.
 
 ```sh
-curl --location 'http://localhost:3002/' \
+curl --location 'http://localhost:3007/' \
 --header 'accept: application/json' \
 --header 'content-type: application/json' \
 --data '{
     "jsonrpc": "2.0",
-    "method": "log_req",
+    "method": "generate_key",
     "params": 
         "sig": "<SIGNATURE>",
     },
