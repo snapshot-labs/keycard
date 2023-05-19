@@ -52,40 +52,40 @@ const isWhitelist = async (address: string) => {
 export const generateKey = async (params: any) => {
   try {
     const signer = verifyMessage('generateKey', params.sig);
-    console.log('Receive key request from', signer, 'with sig', params.sig);
+    console.log('Generate key request from', signer, 'with sig', params.sig);
     const whitelisted = await isWhitelist(signer);
-    if (!whitelisted) return Promise.reject('Not whitelisted');
+    if (!whitelisted) return { error: 'Not whitelisted', code: 401 };
     const key = sha256(params.sig + signer);
     await updateKey(key, signer);
     return { key };
   } catch (e) {
     console.log(e);
-    return Promise.reject('Error while generating key');
+    return { error: 'Error while generating key', code: 500 };
   }
 };
 
 export const logReq = async (key: string, app: string) => {
   try {
-    if (!apps.includes(app)) return Promise.reject('App is not allowed');
+    if (!apps.includes(app)) return { error: 'App is not allowed', code: 401 };
 
     const keyData: Key | null = await getKey(key, app);
 
-    if (!keyData?.key) return Promise.reject('Key does not exist');
-    if (!keyData?.active) return Promise.reject('Key is not active');
+    if (!keyData?.key) return { error: 'Key does not exist', code: 401 };
+    if (!keyData?.active) return { error: 'Key is not active', code: 401 };
     if (keyData?.month_total >= limits[app].monthly)
-      return Promise.reject('Key is restricted for this month');
+      return { error: 'Key is restricted for this month', code: 429 };
 
     const success: boolean = await updateTotal(keyData.key, app);
     return { success };
   } catch (e) {
     console.log(e);
-    return Promise.reject('Error while increasing count');
+    return { error: 'Error while increasing count', code: 500 };
   }
 };
 
 export const getKeys = async (app: string) => {
   try {
-    if (!apps.includes(app)) return Promise.reject('App is not allowed');
+    if (!apps.includes(app)) return { error: 'App is not allowed', code: 401 };
     const activeKeys = await getActiveKeys(app);
     const result = {
       [app]: {
@@ -98,6 +98,6 @@ export const getKeys = async (app: string) => {
     return result;
   } catch (e) {
     console.log(e);
-    return Promise.reject('Error while getting keys');
+    return { error: 'Error while getting keys', code: 500 };
   }
 };
