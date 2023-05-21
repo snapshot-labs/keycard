@@ -14,13 +14,12 @@ services:
 
   mysql:
     image: mysql:8.0
-    command: --default-authentication-plugin=mysql_native_password
     entrypoint: 
       - sh
       - -c
       - >
         sed "s/%DEV_ETH_ADDRESS%/$$DEV_ETH_ADDRESS/g" /fixture_template/fixtures.sql > /docker-entrypoint-initdb.d/x_fixtures.sql &&
-        exec docker-entrypoint.sh mysqld    
+        exec docker-entrypoint.sh mysqld --default-authentication-plugin=mysql_native_password
     cap_add:
       - SYS_NICE
     ports:
