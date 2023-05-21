@@ -5,7 +5,8 @@ import bluebird from 'bluebird';
 import { ConnectionString } from 'connection-string';
 
 const connectionLimit = parseInt(process.env.CONNECTION_LIMIT || '25');
-const config = new ConnectionString(process.env.DATABASE_URL);
+const mysqlUrl = `${process.env.DATABASE_URL}/${process.env.MYSQL_DATABASE_NAME}`;
+const config = new ConnectionString(mysqlUrl);
 bluebird.promisifyAll([Pool, Connection]);
 
 const db: any = mysql.createPool({

@@ -3,6 +3,9 @@ on: [push]
 jobs:
   build-test:
     runs-on: ubuntu-20.04
+    env:
+      MYSQL_DATABASE_NAME: checkpoint
+      DATABASE_URL: 'mysql://root:root@l27.0.0.1:3306'
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -12,9 +15,7 @@ jobs:
       - name: Set up MySQL
         run: |
           sudo /etc/init.d/mysql start
-          mysql -e 'CREATE DATABASE checkpoint;' -uroot -proot
+          mysql -e 'CREATE DATABASE $MYSQL_DATABASE_NAME;' -uroot -proot
       - run: yarn install
       - run: yarn lint
       - run: yarn build
-        env:
-          DATABASE_URL: 'mysql://root:root@l27.0.0.1:3306/checkpoint'
