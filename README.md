@@ -75,8 +75,9 @@ curl --location 'https://keycard.snapshot.org/' \
 ### generate_key
 
 - Make sure to whitelist the `owner` and `name` in the `keys` table before generating a key.
-- Go to <https://app.mycrypto.com/sign-message> and sign the message `generateKey` with the `owner` address.
-- copy the signature and use it in the `sig` param.
+- Go to <https://app.mycrypto.com/sign-message> and connect your wallet (whitelisted `owner` address)
+- Sign the message with keyword `generateKey`.
+- Copy the signature and use it in the `sig` param.
 
 ```sh
 curl --location 'https://keycard.snapshot.org/' \
