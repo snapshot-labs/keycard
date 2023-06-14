@@ -7,8 +7,8 @@ export const authChecker = async (req, res, next) => {
   const { secret = '' } = req.headers;
 
   if (method !== 'generate_key' && secret !== APPS_SECRET) {
+    console.log('[Received] method:', method, id);
     return rpcError(res, 401, 'Wrong secret', id);
   }
-  console.log('[Received] method:', method);
   next();
 };
