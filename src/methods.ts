@@ -3,6 +3,7 @@ import db from './helpers/mysql';
 import { updateKey, updateTotal } from './writer';
 import { limits } from './config.json';
 import { sha256 } from './utils';
+import { capture } from './helpers/sentry';
 
 const apps = Object.keys(limits);
 
@@ -59,7 +60,7 @@ export const generateKey = async (params: any) => {
     await updateKey(key, signer);
     return { key };
   } catch (e) {
-    console.log(e);
+    capture(e, { context: { params } });
     return { error: 'Error while generating key', code: 500 };
   }
 };
@@ -78,7 +79,7 @@ export const logReq = async (key: string, app: string) => {
     const success: boolean = await updateTotal(keyData.key, app);
     return { success };
   } catch (e) {
-    console.log(e);
+    capture(e, { context: { key, app } });
     return { error: 'Error while increasing count', code: 500 };
   }
 };
@@ -97,7 +98,7 @@ export const getKeys = async (app: string) => {
     };
     return result;
   } catch (e) {
-    console.log(e);
+    capture(e, { context: { app } });
     return { error: 'Error while getting keys', code: 500 };
   }
 };

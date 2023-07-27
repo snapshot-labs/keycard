@@ -3,6 +3,7 @@ import { name as packageName, version as packageVersion } from '../package.json'
 import { rpcError, rpcSuccess } from './helpers/utils';
 import { authChecker } from './helpers/auth';
 import { getKeys, logReq, generateKey } from './methods';
+import { capture } from './helpers/sentry';
 
 const router = express.Router();
 
@@ -27,7 +28,7 @@ router.post('/', authChecker, async (req, res) => {
     if (result.error) return rpcError(res, result.code || 500, result.error, id);
     return rpcSuccess(res, result, id);
   } catch (e) {
-    console.log(e);
+    capture(e, { context: { method } });
     return rpcError(res, 500, e, id);
   }
 });
