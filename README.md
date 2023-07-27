@@ -9,17 +9,22 @@ This API depends on a couple of services:
 - Node.js (>= v16.0.0)
 - MySQL (v8.0)
 
+### Docker
+
+You can use the docker-compose service to start one up quickly with:
+
+```sh
+docker compose up 
+# this will start mysql on port 3306
+# and the api on port 3007
+```
+
+### Local
+
 To get start, first install all dependencies with:
 
 ```sh
 yarn
-
-```
-
-Next, you need to have a MySQL server running and accessible. You can use the docker-compose service to start one up quickly with:
-
-```sh
-docker compose up mysql # this will start mysql on port 3306
 ```
 
 Next, make a copy of `.env.example` and rename it as `.env`. Then update the credentials in the file to the correct values for your
@@ -33,7 +38,7 @@ Finally, to run the service you do:
 yarn dev
 ```
 
-This should start the service to be listening on port 8888.
+This should start the service to be listening on port 3007.
 
 ## Using the API
 

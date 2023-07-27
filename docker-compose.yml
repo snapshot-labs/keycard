@@ -12,6 +12,15 @@ services:
       - MYSQL_DATABASE=keycard
     volumes:
       - mysql:/var/lib/mysql
+  keycard-api:
+    build: .
+    ports:
+      - "3007:3007"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - /app/node_modules
 volumes:
   mysql:
     driver: local
