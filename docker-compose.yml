@@ -11,7 +11,8 @@ services:
       - MYSQL_ROOT_PASSWORD=default_password
       - MYSQL_DATABASE=keycard
     volumes:
-      - mysql:/var/lib/mysql
+      - "./src/helpers/schema.sql:/docker-entrypoint-initdb.d/1.sql"
+      - "./src/helpers/seed.sql:/docker-entrypoint-initdb.d/2.sql"
   keycard-api:
     build: .
     ports:
