@@ -3,7 +3,7 @@ import { name as packageName, version as packageVersion } from '../package.json'
 import { rpcError, rpcSuccess } from './helpers/utils';
 import { authChecker } from './helpers/auth';
 import { getKeys, logReq, generateKey } from './methods';
-import { capture } from './helpers/sentry';
+import { capture } from '@snapshot-labs/snapshot-sentry';
 
 const router = express.Router();
 
