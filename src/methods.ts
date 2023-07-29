@@ -3,7 +3,7 @@ import db from './helpers/mysql';
 import { updateKey, updateTotal } from './writer';
 import { limits } from './config.json';
 import { sha256 } from './utils';
-import { capture } from './helpers/sentry';
+import { capture } from '@snapshot-labs/snapshot-sentry';
 
 const apps = Object.keys(limits);
 
