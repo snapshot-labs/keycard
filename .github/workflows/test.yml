@@ -1,0 +1,7 @@
+name: Test
+on: [push]
+jobs:
+  test:
+    uses: snapshot-labs/actions/.github/workflows/test.yml@main
+    with:
+      mysql_database_name: keycard_test
