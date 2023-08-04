@@ -4,11 +4,13 @@ import cors from 'cors';
 import rpc from './rpc';
 import { rpcError } from './helpers/utils';
 import { initLogger, fallbackLogger } from '@snapshot-labs/snapshot-sentry';
+import initMetrics from './helpers/metrics';
 
 const app = express();
 const PORT = process.env.PORT || 3007;
 
 initLogger(app);
+initMetrics(app);
 
 app.use(express.json({ limit: '4mb' }));
 app.use(express.urlencoded({ limit: '4mb', extended: false }));
