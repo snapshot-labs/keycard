@@ -88,7 +88,7 @@ export const getKeys = async (app: string) => {
     const activeKeys = await getActiveKeys(app);
     // Reset timestamp is the first day of the next month
     const resetTimestamp = (
-      new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).getTime() / 1e3
+      Date.UTC(new Date().getFullYear(), new Date().getMonth() + 1, 1) / 1e3
     ).toFixed(0);
     const result = {
       [app]: {
