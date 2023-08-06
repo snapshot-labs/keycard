@@ -2,7 +2,7 @@ import express from 'express';
 import { name as packageName, version as packageVersion } from '../package.json';
 import { rpcError, rpcSuccess } from './helpers/utils';
 import { authChecker } from './helpers/auth';
-import { getKeys, logReq, generateKey } from './methods';
+import { getKeys, logReq, generateKey, whitelistAddress } from './methods';
 import { capture } from '@snapshot-labs/snapshot-sentry';
 
 const router = express.Router();
@@ -24,6 +24,7 @@ router.post('/', authChecker, async (req, res) => {
     if (method === 'log_req') result = await logReq(params.key, params.app);
     if (method === 'get_keys') result = await getKeys(params.app);
     if (method === 'generate_key') result = await generateKey(params);
+    if (method === 'whitelist') result = await whitelistAddress(params);
 
     if (result.error) return rpcError(res, result.code || 500, result.error, id);
     return rpcSuccess(res, result, id);
