@@ -97,3 +97,23 @@ curl --location 'https://keycard.snapshot.org/' \
     "id": "123456789"
 }'
 ```
+
+### whitelist
+
+This method is used by laser to whitelist new address
+
+```sh
+curl --location 'https://keycard.snapshot.org/' \
+--header 'accept: application/json' \
+--header 'content-type: application/json' \
+--header 'secret: <APP_SECRET>' \
+--data '{
+    "jsonrpc": "2.0",
+    "method": "whitelist",
+    "params": {
+        "owner": "<OWNER_ADDRESS>",
+        "name": "<NAME>"
+    },
+    "id": "123456789"
+}'
+```
