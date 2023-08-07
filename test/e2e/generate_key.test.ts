@@ -1,4 +1,4 @@
-describe('generateKey', () => {
+describe('POST / { method: generateKey }', () => {
   describe('when the user is whitelisted', () => {
     it.todo('update and return the key');
   });

@@ -1,4 +1,4 @@
-describe('logKey', () => {
+describe('POST / { method: logKey }', () => {
   describe('when the key does not exists', () => {
     it.todo('returns a 401 error');
   });

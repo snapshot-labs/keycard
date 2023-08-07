@@ -1,4 +1,4 @@
-describe('getKey', () => {
+describe('POST / { method: getKey }', () => {
   describe('when the given app exists', () => {
     it.todo('returns the requests usage of each key');
   });

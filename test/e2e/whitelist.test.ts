@@ -5,7 +5,7 @@ const HOST = `http://localhost:${process.env.PORT || 3077}`;
 const NAME = 'test-name';
 const ADDRESS = '0x0000000000000000000000000000000000000000';
 
-describe('whitelist', () => {
+describe('POST / { method: whitelist }', () => {
   afterEach(async () => {
     await db.queryAsync('DELETE FROM `keys`');
   });
