@@ -18,13 +18,14 @@ router.get('/', async (req, res) => {
 
 router.post('/', authChecker, async (req, res) => {
   const { id = null, method, params = {} } = req.body;
-  if (!method) return rpcError(res, 500, 'missing method', id);
+  if (!method) return rpcError(res, 400, 'missing method', id);
   try {
     let result: any = {};
     if (method === 'log_req') result = await logReq(params.key, params.app);
-    if (method === 'get_keys') result = await getKeys(params.app);
-    if (method === 'generate_key') result = await generateKey(params);
-    if (method === 'whitelist') result = await whitelistAddress(params);
+    else if (method === 'get_keys') result = await getKeys(params.app);
+    else if (method === 'generate_key') result = await generateKey(params);
+    else if (method === 'whitelist') result = await whitelistAddress(params);
+    else return rpcError(res, 400, 'invalid method', id);
 
     if (result.error) return rpcError(res, result.code || 500, result.error, id);
     return rpcSuccess(res, result, id);
