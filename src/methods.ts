@@ -1,6 +1,7 @@
+import { getAddress } from '@ethersproject/address';
 import { verifyMessage } from '@ethersproject/wallet';
 import db from './helpers/mysql';
-import { updateKey, updateTotal } from './writer';
+import { createNewKey, updateKey, updateTotal } from './writer';
 import { limits } from './config.json';
 import { sha256 } from './utils';
 import { capture } from '@snapshot-labs/snapshot-sentry';
@@ -100,5 +101,26 @@ export const getKeys = async (app: string) => {
   } catch (e) {
     capture(e, { context: { app } });
     return { error: 'Error while getting keys', code: 500 };
+  }
+};
+
+export const whitelistAddress = async (params: any) => {
+  try {
+    const { name } = params;
+    let { address } = params;
+    if (!name) return { error: 'Missing name', code: 400 };
+    if (!address) return { error: 'Missing address', code: 400 };
+    try {
+      address = getAddress(address);
+    } catch (e) {
+      return { error: 'Invalid address', code: 400 };
+    }
+    const success = await createNewKey(address, name);
+    return { success };
+  } catch (e: any) {
+    if (e.code === 'ER_DUP_ENTRY') return { error: 'Address already whitelisted', code: 409 };
+    if (e.code === 'ER_DATA_TOO_LONG') return { error: 'Name too long', code: 400 };
+    capture(e, { context: { params } });
+    return { error: 'Error while whitelisting address', code: 500 };
   }
 };

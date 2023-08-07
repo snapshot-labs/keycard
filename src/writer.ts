@@ -21,3 +21,9 @@ export const updateKey = async (key: string, owner: string) => {
   await db.queryAsync(sql, [key, owner]);
   return true;
 };
+
+export const createNewKey = async (owner: string, name: string) => {
+  const sql = 'INSERT INTO `keys` (owner, name) VALUES (?, ?)';
+  await db.queryAsync(sql, [owner, name]);
+  return true;
+};
