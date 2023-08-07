@@ -74,8 +74,6 @@ export const logReq = async (key: string, app: string) => {
 
     if (!keyData?.key) return { error: 'Key does not exist', code: 401 };
     if (!keyData?.active) return { error: 'Key is not active', code: 401 };
-    if (keyData?.month_total >= limits[app].monthly)
-      return { error: 'Key is restricted for this month', code: 429 };
 
     const success: boolean = await updateTotal(keyData.key, app);
     return { success };
@@ -89,12 +87,23 @@ export const getKeys = async (app: string) => {
   try {
     if (!apps.includes(app)) return { error: 'App is not allowed', code: 401 };
     const activeKeys = await getActiveKeys(app);
+    // Reset timestamp is the first day of the next month
+    const resetTimestamp = (
+      Date.UTC(new Date().getFullYear(), new Date().getMonth() + 1, 1) / 1e3
+    ).toFixed(0);
     const result = {
       [app]: {
+        // TODO: `active` and `restricted_monthly` will be deprecated
         active: activeKeys.map((key: any) => key.key),
         restricted_monthly: activeKeys
           .filter((key: any) => key.month_total >= limits[app].monthly)
-          .map((key: any) => key.key)
+          .map((key: any) => key.key),
+        monthly_counts: activeKeys.reduce((obj, { key, month_total }) => {
+          obj[key] = month_total ?? 0;
+          return obj;
+        }, {}),
+        limits: limits[app],
+        reset: resetTimestamp
       }
     };
     return result;
