@@ -19,7 +19,6 @@ type Key = {
 };
 
 const getKey = async (key: string, app: string): Promise<Key | null> => {
-  console.log(key, app);
   const [keyData] = await db.queryAsync(
     `
       SELECT k.key, k.active, m.total as month_total FROM \`keys\` k
@@ -54,7 +53,7 @@ const isWhitelist = async (address: string) => {
 
 export const generateKey = async (params: any) => {
   try {
-    let signer;
+    let signer: string;
     try {
       signer = verifyMessage('generateKey', params.sig);
     } catch (e: any) {
