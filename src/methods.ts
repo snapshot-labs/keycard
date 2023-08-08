@@ -5,6 +5,7 @@ import { createNewKey, updateKey, updateTotal } from './writer';
 import { limits } from './config.json';
 import { sha256 } from './utils';
 import { capture } from '@snapshot-labs/snapshot-sentry';
+import { rpcError } from './helpers/utils';
 
 const apps = Object.keys(limits);
 
@@ -54,7 +55,12 @@ const isWhitelist = async (address: string) => {
 
 export const generateKey = async (params: any) => {
   try {
-    const signer = verifyMessage('generateKey', params.sig);
+    let signer;
+    try {
+      signer = verifyMessage('generateKey', params.sig);
+    } catch (e: any) {
+      return { error: 'Invalid signature', code: 400 };
+    }
     console.log('Generate key request from', signer, 'with sig', params.sig);
     const whitelisted = await isWhitelist(signer);
     if (!whitelisted) return { error: 'Not whitelisted', code: 401 };
