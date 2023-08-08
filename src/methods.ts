@@ -53,7 +53,12 @@ const isWhitelist = async (address: string) => {
 
 export const generateKey = async (params: any) => {
   try {
-    const signer = verifyMessage('generateKey', params.sig);
+    let signer: string;
+    try {
+      signer = verifyMessage('generateKey', params.sig);
+    } catch (e: any) {
+      return { error: 'Invalid signature', code: 400 };
+    }
     console.log('Generate key request from', signer, 'with sig', params.sig);
     const whitelisted = await isWhitelist(signer);
     if (!whitelisted) return { error: 'Not whitelisted', code: 401 };
@@ -75,7 +80,7 @@ export const logReq = async (key: string, app: string) => {
     if (!keyData?.key) return { error: 'Key does not exist', code: 401 };
     if (!keyData?.active) return { error: 'Key is not active', code: 401 };
 
-    const success: boolean = await updateTotal(keyData.key, app);
+    const success = await updateTotal(keyData.key, app);
     return { success };
   } catch (e) {
     capture(e, { context: { key, app } });
