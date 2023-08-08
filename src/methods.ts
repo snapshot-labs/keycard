@@ -5,7 +5,6 @@ import { createNewKey, updateKey, updateTotal } from './writer';
 import { limits } from './config.json';
 import { sha256 } from './utils';
 import { capture } from '@snapshot-labs/snapshot-sentry';
-import { rpcError } from './helpers/utils';
 
 const apps = Object.keys(limits);
 
