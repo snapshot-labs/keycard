@@ -117,3 +117,15 @@ curl --location 'https://keycard.snapshot.org/' \
     "id": "123456789"
 }'
 ```
+
+## Test
+
+Run all tests with 
+
+```bash 
+yarn test # Will also generate test coverage
+# You can also run only E2E tests with: yarn test:e2e
+```
+
+E2E tests require a dedicated MySQL test database, named `keycard_test`, with the same schema as defined in `src/helpers/schema.sql`.
+Test configuration are defined in `test/.env.test`
