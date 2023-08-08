@@ -1,6 +1,5 @@
 import request from 'supertest';
-
-const HOST = `http://localhost:${process.env.PORT || 3077}`;
+import { HOST } from '../utils';
 
 describe('POST /', () => {
   describe('when passing an invalid method', () => {

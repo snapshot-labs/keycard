@@ -1,16 +1,17 @@
 import request from 'supertest';
 import db from '../../src/helpers/mysql';
+import { HOST, cleanupDb } from '../utils';
 
-const HOST = `http://localhost:${process.env.PORT || 3077}`;
-const NAME = 'test-name';
-const ADDRESS = '0x0000000000000000000000000000000000000000';
+const NAME = 'test-whitelist';
+const ADDRESS = '0x0000000000000000000000000000000000000001';
 
 describe('POST / { method: whitelist }', () => {
-  afterEach(async () => {
-    await db.queryAsync('DELETE FROM `keys`');
+  beforeEach(async () => {
+    await cleanupDb();
   });
 
   afterAll(async () => {
+    await cleanupDb();
     return db.endAsync();
   });
 

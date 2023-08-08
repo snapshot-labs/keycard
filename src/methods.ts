@@ -19,6 +19,7 @@ type Key = {
 };
 
 const getKey = async (key: string, app: string): Promise<Key | null> => {
+  console.log(key, app);
   const [keyData] = await db.queryAsync(
     `
       SELECT k.key, k.active, m.total as month_total FROM \`keys\` k
@@ -75,7 +76,7 @@ export const logReq = async (key: string, app: string) => {
     if (!keyData?.key) return { error: 'Key does not exist', code: 401 };
     if (!keyData?.active) return { error: 'Key is not active', code: 401 };
 
-    const success: boolean = await updateTotal(keyData.key, app);
+    const success = await updateTotal(keyData.key, app);
     return { success };
   } catch (e) {
     capture(e, { context: { key, app } });
