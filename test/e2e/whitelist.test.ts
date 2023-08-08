@@ -2,7 +2,7 @@ import request from 'supertest';
 import db from '../../src/helpers/mysql';
 import { HOST, cleanupDb } from '../utils';
 
-const NAME = 'test-whitelist';
+const NAME = 'test-whitelist-name';
 const ADDRESS = '0x0000000000000000000000000000000000000001';
 
 describe('POST / { method: whitelist }', () => {

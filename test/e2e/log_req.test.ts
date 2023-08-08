@@ -4,9 +4,9 @@ import { limits } from '../../src/config.json';
 import { updateTotal } from '../../src/writer';
 import { HOST, cleanupDb } from '../utils';
 
-const NAME = 'test-log-req';
+const NAME = 'test-log-req-name';
 const ADDRESS = '0x0000000000000000000000000000000000000000';
-const KEY = 'test-key';
+const KEY = 'test-log-req-key';
 
 const apps = Object.keys(limits);
 
@@ -69,7 +69,7 @@ describe('POST / { method: log_req }', () => {
         NAME,
         KEY
       ]);
-      updateTotal(KEY, apps[0]);
+      await updateTotal(KEY, apps[0]);
 
       const { total: beforeTotal, last_active: beforeLastActive } = (
         await db.queryAsync('SELECT total, last_active from reqs WHERE `key` = ?', KEY)
