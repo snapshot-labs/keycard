@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "license": "MIT",
   "scripts": {
+    "postinstall": "husky install",
     "lint": "eslint src/ test/ --ext .ts,.json",
     "lint:fix": "yarn lint --fix",
     "typecheck": "tsc --noEmit",
@@ -12,6 +13,11 @@
     "start:test": "dotenv -e test/.env.test yarn dev",
     "test": "PORT=3077 start-server-and-test 'yarn start:test' 3077 'dotenv -e test/.env.test jest --runInBand'",
     "test:e2e": "PORT=3077 start-server-and-test 'yarn start:test' 3077 'dotenv -e test/.env.test jest --runInBand --collectCoverage=false test/e2e/'"
+  },
+  "lint-staged": {
+    "*.{js,ts,json}": [
+      "yarn lint:fix"
+    ]
   },
   "eslintConfig": {
     "extends": "@snapshot-labs"
@@ -42,8 +48,10 @@
     "dotenv-cli": "^7.2.1",
     "eslint": "^8.46.0",
     "eslint-plugin-prettier": "^5.0.0",
+    "husky": "^8.0.3",
     "jest": "^29.6.2",
     "jest-environment-node-single-context": "^29.1.0",
+    "lint-staged": "^14.0.1",
     "prettier": "^3.0.1",
     "start-server-and-test": "^2.0.0",
     "supertest": "^6.3.3",
