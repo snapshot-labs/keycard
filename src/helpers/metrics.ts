@@ -77,7 +77,6 @@ if (PUSHGATEWAY_URL && INSTANCE && JOB_NAME) {
           }
         })
         .catch(errorHandler);
-    } catch (e) {
     } finally {
       await sleep(5e3);
       await pushMetrics(errorHandler);
