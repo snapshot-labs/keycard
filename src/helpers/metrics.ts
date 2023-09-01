@@ -4,8 +4,18 @@ import { capture } from '@snapshot-labs/snapshot-sentry';
 import http from 'http';
 import db from './mysql';
 
+let server;
+
 export default function initMetrics(app: Express) {
   init(app, { whitelistedPath: [/^\/$/] });
+
+  app.use((req, res, next) => {
+    if (!server) {
+      // @ts-ignore
+      server = req.socket.server;
+    }
+    next();
+  });
 }
 
 async function collectSubscriberCounts() {
@@ -85,3 +95,13 @@ if (PUSHGATEWAY_URL && INSTANCE && JOB_NAME) {
 
   pushMetrics(e => capture(e));
 }
+
+new client.Gauge({
+  name: 'express_open_connections_size',
+  help: 'Number of open connections on the express server',
+  async collect() {
+    if (server) {
+      this.set(server._connections);
+    }
+  }
+});
