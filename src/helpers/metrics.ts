@@ -1,6 +1,8 @@
-import init, { client } from '@snapshot-labs/snapshot-metrics';
-import db from './mysql';
 import type { Express } from 'express';
+import init, { client } from '@snapshot-labs/snapshot-metrics';
+import { capture } from '@snapshot-labs/snapshot-sentry';
+import http from 'http';
+import db from './mysql';
 
 export default function initMetrics(app: Express) {
   init(app, { whitelistedPath: [/^\/$/] });
@@ -38,3 +40,49 @@ new client.Gauge({
     this.set((await db.queryAsync(`SELECT SUM(total) as count FROM reqs`))[0].count as any);
   }
 });
+
+// Metrics PushGateway test
+// @todo To be moved to snapshot-metrics package after live testing
+const INSTANCE = process.env.METRICS_INSTANCE;
+const JOB_NAME = process.env.METRICS_JOB_NAME ?? 'prometheus';
+const PUSHGATEWAY_URL = process.env.METRICS_PUSHGATEWAY_URL;
+
+async function sleep(time: number) {
+  return new Promise(resolve => {
+    setTimeout(resolve, time);
+  });
+}
+
+if (PUSHGATEWAY_URL && INSTANCE && JOB_NAME) {
+  const gateway = new client.Pushgateway(PUSHGATEWAY_URL, {
+    timeout: 5e3,
+    agent: new http.Agent({
+      keepAlive: true,
+      keepAliveMsecs: 10e3,
+      maxSockets: 5
+    })
+  });
+
+  function defaultErrorHandler(e: any) {
+    console.error('Error while pushing to Pushgateway', e);
+  }
+
+  async function pushMetrics(errorHandler = defaultErrorHandler) {
+    try {
+      gateway
+        .pushAdd({
+          jobName: JOB_NAME as string,
+          groupings: {
+            instance: `${INSTANCE}:${process.env.HOSTNAME || '80'}`
+          }
+        })
+        .catch(errorHandler);
+    } catch (e) {
+    } finally {
+      await sleep(5e3);
+      await pushMetrics(errorHandler);
+    }
+  }
+
+  pushMetrics(e => capture(e));
+}
