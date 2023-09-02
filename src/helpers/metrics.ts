@@ -1,10 +1,14 @@
 import type { Express } from 'express';
 import init, { client } from '@snapshot-labs/snapshot-metrics';
 import { capture } from '@snapshot-labs/snapshot-sentry';
-import http from 'http';
+import http from 'node:http';
+import https from 'node:https';
 import db from './mysql';
 
 let server;
+const agentOptions = { keepAlive: true, keepAliveMsecs: 10e3, maxSockets: 5 };
+const httpAgent = new http.Agent(agentOptions);
+const httpsAgent = new https.Agent(agentOptions);
 
 export default function initMetrics(app: Express) {
   init(app, { whitelistedPath: [/^\/$/] });
@@ -57,43 +61,28 @@ const INSTANCE = process.env.METRICS_INSTANCE;
 const JOB_NAME = process.env.METRICS_JOB_NAME ?? 'prometheus';
 const PUSHGATEWAY_URL = process.env.METRICS_PUSHGATEWAY_URL;
 
-async function sleep(time: number) {
-  return new Promise(resolve => {
-    setTimeout(resolve, time);
-  });
-}
-
 if (PUSHGATEWAY_URL && INSTANCE && JOB_NAME) {
+  console.log(`Sending metrics to Pushgateway ${PUSHGATEWAY_URL}`)
   const gateway = new client.Pushgateway(PUSHGATEWAY_URL, {
     timeout: 5e3,
-    agent: new http.Agent({
-      keepAlive: true,
-      keepAliveMsecs: 10e3,
-      maxSockets: 5
-    })
+    agent: new URL(PUSHGATEWAY_URL).protocol === 'http:' ? httpAgent : httpsAgent
   });
+  const metricsGroup = {
+    jobName: JOB_NAME as string,
+    groupings: {
+      instance: `${INSTANCE}:${process.env.HOSTNAME || '80'}`
+    }
+  };
 
   function defaultErrorHandler(e: any) {
     console.error('Error while pushing to Pushgateway', e);
   }
 
-  async function pushMetrics(errorHandler = defaultErrorHandler) {
-    try {
-      gateway
-        .pushAdd({
-          jobName: JOB_NAME as string,
-          groupings: {
-            instance: `${INSTANCE}:${process.env.HOSTNAME || '80'}`
-          }
-        })
-        .catch(errorHandler);
-    } finally {
-      await sleep(5e3);
-      await pushMetrics(errorHandler);
-    }
+  function pushMetrics(errorHandler = defaultErrorHandler) {
+    gateway.pushAdd(metricsGroup).catch(errorHandler);
   }
 
-  pushMetrics(e => capture(e));
+  setInterval(pushMetrics, 15e3, e => capture(e));
 }
 
 new client.Gauge({
