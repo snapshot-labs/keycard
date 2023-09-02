@@ -62,7 +62,7 @@ const JOB_NAME = process.env.METRICS_JOB_NAME ?? 'prometheus';
 const PUSHGATEWAY_URL = process.env.METRICS_PUSHGATEWAY_URL;
 
 if (PUSHGATEWAY_URL && INSTANCE && JOB_NAME) {
-  console.log(`Sending metrics to Pushgateway ${PUSHGATEWAY_URL}`)
+  console.log(`Sending metrics to Pushgateway ${PUSHGATEWAY_URL}`);
   const gateway = new client.Pushgateway(PUSHGATEWAY_URL, {
     timeout: 5e3,
     agent: new URL(PUSHGATEWAY_URL).protocol === 'http:' ? httpAgent : httpsAgent
