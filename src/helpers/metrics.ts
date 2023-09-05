@@ -6,9 +6,6 @@ import https from 'node:https';
 import db from './mysql';
 
 let server;
-const agentOptions = { keepAlive: true, keepAliveMsecs: 10e3, maxSockets: 5 };
-const httpAgent = new http.Agent(agentOptions);
-const httpsAgent = new https.Agent(agentOptions);
 
 export default function initMetrics(app: Express) {
   init(app, { whitelistedPath: [/^\/$/] });
@@ -63,9 +60,13 @@ const PUSHGATEWAY_URL = process.env.METRICS_PUSHGATEWAY_URL;
 
 if (PUSHGATEWAY_URL && INSTANCE && JOB_NAME) {
   console.log(`Sending metrics to Pushgateway ${PUSHGATEWAY_URL}`);
+  const agentOptions = { keepAlive: true, keepAliveMsecs: 10e3, maxSockets: 5 };
   const gateway = new client.Pushgateway(PUSHGATEWAY_URL, {
     timeout: 5e3,
-    agent: new URL(PUSHGATEWAY_URL).protocol === 'http:' ? httpAgent : httpsAgent
+    agent:
+      new URL(PUSHGATEWAY_URL).protocol === 'http:'
+        ? new http.Agent(agentOptions)
+        : new https.Agent(agentOptions)
   });
   const metricsGroup = {
     jobName: JOB_NAME as string,
