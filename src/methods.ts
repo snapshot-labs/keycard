@@ -98,11 +98,6 @@ export const getKeys = async (app: string) => {
     ).toFixed(0);
     const result = {
       [app]: {
-        // TODO: `active` and `restricted_monthly` will be deprecated
-        active: activeKeys.map((key: any) => key.key),
-        restricted_monthly: activeKeys
-          .filter((key: any) => key.month_total >= limits[app].monthly)
-          .map((key: any) => key.key),
         monthly_counts: activeKeys.reduce((obj, { key, month_total }) => {
           obj[key] = month_total ?? 0;
           return obj;
