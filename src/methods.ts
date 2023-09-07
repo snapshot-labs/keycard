@@ -80,8 +80,11 @@ export const logReq = async (key: string, app: string) => {
     if (!keyData?.key) return { error: 'Key does not exist', code: 401 };
     if (!keyData?.active) return { error: 'Key is not active', code: 401 };
 
-    const success = await updateTotal(keyData.key, app);
-    return { success };
+    // Increase the total count for this key, but don't wait for it to finish.
+    updateTotal(keyData.key, app).catch(e => {
+      capture(e, { key, app });
+    });
+    return { success: true };
   } catch (e) {
     capture(e, { context: { key, app } });
     return { error: 'Error while increasing count', code: 500 };
