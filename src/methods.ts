@@ -82,7 +82,7 @@ export const logReq = async (key: string, app: string) => {
 
     // Increase the total count for this key, but don't wait for it to finish.
     updateTotal(keyData.key, app).catch(e => {
-      capture(e, { context: { key, app } });
+      capture(e, { key, app });
     });
     return { success: true };
   } catch (e) {
