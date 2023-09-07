@@ -94,6 +94,8 @@ describe('POST / { method: log_req }', () => {
         .set({ secret: process.env.SECRET })
         .send({ method: 'log_req', params: { app: apps[0], key: KEY } });
 
+      await new Promise(r => setTimeout(r, 1000));
+
       const { total: afterTotal, last_active: afterLastActive } = (
         await db.queryAsync('SELECT total, last_active from reqs WHERE `key` = ?', KEY)
       )[0];
