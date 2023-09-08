@@ -71,7 +71,7 @@ if (PUSHGATEWAY_URL && INSTANCE && JOB_NAME) {
   const metricsGroup = {
     jobName: JOB_NAME as string,
     groupings: {
-      instance: `${INSTANCE}:${process.env.HOSTNAME || '80'}`
+      instance: `${INSTANCE}:${process.env.HOSTNAME || process.env.PORT || '80'}`
     }
   };
 
