@@ -59,15 +59,24 @@ const JOB_NAME = process.env.METRICS_JOB_NAME ?? 'prometheus';
 const PUSHGATEWAY_URL = process.env.METRICS_PUSHGATEWAY_URL;
 
 if (PUSHGATEWAY_URL && INSTANCE && JOB_NAME) {
-  console.log(`Sending metrics to Pushgateway ${PUSHGATEWAY_URL}`);
   const agentOptions = { keepAlive: true, keepAliveMsecs: 10e3, maxSockets: 5 };
-  const gateway = new client.Pushgateway(PUSHGATEWAY_URL, {
+  const requireAuth =
+    process.env.METRICS_PUSHGATEWAY_USER && process.env.METRICS_PUSHGATEWAY_PASSWORD;
+  const options = {
     timeout: 5e3,
+    auth: requireAuth
+      ? `${process.env.METRICS_PUSHGATEWAY_USER}:${process.env.METRICS_PUSHGATEWAY_PASSWORD}`
+      : '',
     agent:
       new URL(PUSHGATEWAY_URL).protocol === 'http:'
         ? new http.Agent(agentOptions)
         : new https.Agent(agentOptions)
-  });
+  };
+
+  console.log(
+    `Sending metrics to Pushgateway ${PUSHGATEWAY_URL}${requireAuth ? ' with authentication' : ''}`
+  );
+  const gateway = new client.Pushgateway(PUSHGATEWAY_URL, options);
   const metricsGroup = {
     jobName: JOB_NAME as string,
     groupings: {
