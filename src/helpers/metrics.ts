@@ -1,22 +1,10 @@
 import type { Express } from 'express';
 import init, { client } from '@snapshot-labs/snapshot-metrics';
 import { capture } from '@snapshot-labs/snapshot-sentry';
-import http from 'node:http';
-import https from 'node:https';
 import db from './mysql';
 
-let server;
-
 export default function initMetrics(app: Express) {
-  init(app, { whitelistedPath: [/^\/$/] });
-
-  app.use((req, res, next) => {
-    if (!server) {
-      // @ts-ignore
-      server = req.socket.server;
-    }
-    next();
-  });
+  init(app, { whitelistedPath: [/^\/$/], errorHandler: (e: any) => capture(e) });
 }
 
 async function collectSubscriberCounts() {
@@ -49,58 +37,5 @@ new client.Gauge({
   help: 'Total number of API requests',
   async collect() {
     this.set((await db.queryAsync(`SELECT SUM(total) as count FROM reqs`))[0].count as any);
-  }
-});
-
-// Metrics PushGateway test
-// @todo To be moved to snapshot-metrics package after live testing
-const INSTANCE = process.env.METRICS_INSTANCE;
-const JOB_NAME = process.env.METRICS_JOB_NAME ?? 'prometheus';
-const PUSHGATEWAY_URL = process.env.METRICS_PUSHGATEWAY_URL;
-
-if (PUSHGATEWAY_URL && INSTANCE && JOB_NAME) {
-  const agentOptions = { keepAlive: true, keepAliveMsecs: 10e3, maxSockets: 5 };
-  const requireAuth =
-    process.env.METRICS_PUSHGATEWAY_USER && process.env.METRICS_PUSHGATEWAY_PASSWORD;
-  const options = {
-    timeout: 5e3,
-    auth: requireAuth
-      ? `${process.env.METRICS_PUSHGATEWAY_USER}:${process.env.METRICS_PUSHGATEWAY_PASSWORD}`
-      : '',
-    agent:
-      new URL(PUSHGATEWAY_URL).protocol === 'http:'
-        ? new http.Agent(agentOptions)
-        : new https.Agent(agentOptions)
-  };
-
-  console.log(
-    `Sending metrics to Pushgateway ${PUSHGATEWAY_URL}${requireAuth ? ' with authentication' : ''}`
-  );
-  const gateway = new client.Pushgateway(PUSHGATEWAY_URL, options);
-  const metricsGroup = {
-    jobName: JOB_NAME as string,
-    groupings: {
-      instance: `${INSTANCE}:${process.env.HOSTNAME || process.env.PORT || '80'}`
-    }
-  };
-
-  function defaultErrorHandler(e: any) {
-    console.error('Error while pushing to Pushgateway', e);
-  }
-
-  function pushMetrics(errorHandler = defaultErrorHandler) {
-    gateway.pushAdd(metricsGroup).catch(errorHandler);
-  }
-
-  setInterval(pushMetrics, 15e3, e => capture(e));
-}
-
-new client.Gauge({
-  name: 'express_open_connections_size',
-  help: 'Number of open connections on the express server',
-  async collect() {
-    if (server) {
-      this.set(server._connections);
-    }
   }
 });
