@@ -4,7 +4,7 @@ import { capture } from '@snapshot-labs/snapshot-sentry';
 import db from './mysql';
 
 export default function initMetrics(app: Express) {
-  init(app, { whitelistedPath: [/^\/$/], errorHandler: (e: any) => capture(e) });
+  init(app, { whitelistedPath: [/^\/$/], errorHandler: (e: any) => capture(e), db });
 }
 
 async function collectSubscriberCounts() {
