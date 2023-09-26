@@ -106,7 +106,7 @@ export const getKeys = async (app: string) => {
           obj[key] = month_total ?? 0;
           return obj;
         }, {}),
-        active_keys_counts: activeKeys.reduce((obj, { key, level, month_total }) => {
+        key_counts: activeKeys.reduce((obj, { key, level, month_total }) => {
           obj[key] = { level, month: month_total ?? 0 };
           return obj;
         }, {}),

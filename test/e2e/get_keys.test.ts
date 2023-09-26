@@ -37,7 +37,7 @@ describe('POST / { method: get_keys }', () => {
       expect(response.status).toBe(200);
       console.log(response.body.result[apps[0]]);
       expect(response.body.result[apps[0]].monthly_counts[KEY]).toBe(1);
-      expect(response.body.result[apps[0]].active_keys_counts[KEY]).toMatchObject({
+      expect(response.body.result[apps[0]].key_counts[KEY]).toMatchObject({
         level: 'user',
         month: 1
       });
