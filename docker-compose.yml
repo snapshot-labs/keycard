@@ -6,7 +6,7 @@ services:
     cap_add:
       - SYS_NICE
     ports:
-      - '3306:3306'
+      - '3305:3306'
     environment:
       - MYSQL_ROOT_PASSWORD=default_password
       - MYSQL_DATABASE=keycard

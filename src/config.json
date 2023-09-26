@@ -1,10 +1,14 @@
 {
   "limits": {
     "snapshot-hub": {
-      "monthly": 2e6
+      "monthly": 2e6,
+      "user_monthly": 2e6,
+      "integrator_monthly": 5e6
     },
     "score-api": {
-      "monthly": 2e6
+      "monthly": 2e6,
+      "user_monthly": 2e6,
+      "integrator_monthly": 5e6
     }
   }
 }

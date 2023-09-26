@@ -15,6 +15,7 @@ You can use the docker-compose service to start one up quickly with:
 
 ```sh
 docker compose up 
+# or docker-compose up --build if you want to rebuild the image (will run yarn install and sql from seed.sql)
 # this will start mysql on port 3306
 # and the api on port 3007
 ```

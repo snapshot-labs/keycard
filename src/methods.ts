@@ -34,7 +34,7 @@ const getKey = async (key: string, app: string): Promise<Key | null> => {
 const getActiveKeys = async (app: string) => {
   const keys = await db.queryAsync(
     `
-      SELECT k.key, m.total as month_total
+      SELECT k.key, k.level, m.total as month_total
       FROM \`keys\` k
         LEFT JOIN reqs_monthly m ON m.key = k.key
         AND m.month = DATE_FORMAT(CURRENT_TIMESTAMP, '%m-%Y')
@@ -101,8 +101,13 @@ export const getKeys = async (app: string) => {
     ).toFixed(0);
     const result = {
       [app]: {
+        // monthly_counts will be deprecated in the future
         monthly_counts: activeKeys.reduce((obj, { key, month_total }) => {
           obj[key] = month_total ?? 0;
+          return obj;
+        }, {}),
+        active_keys_counts: activeKeys.reduce((obj, { key, level, month_total }) => {
+          obj[key] = { level, month: month_total ?? 0 };
           return obj;
         }, {}),
         limits: limits[app],
