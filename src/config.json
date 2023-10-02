@@ -1,7 +1,7 @@
 {
   "limits": {
     "snapshot-hub": {
-      "monthly": 5e6
+      "monthly": 2e6
     },
     "score-api": {
       "monthly": 2e6
