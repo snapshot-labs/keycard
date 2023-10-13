@@ -2,6 +2,7 @@ import type { Express } from 'express';
 import init, { client } from '@snapshot-labs/snapshot-metrics';
 import { capture } from '@snapshot-labs/snapshot-sentry';
 import db from './mysql';
+import config from '../config.json';
 
 export default function initMetrics(app: Express) {
   init(app, { whitelistedPath: [/^\/$/], errorHandler: (e: any) => capture(e), db });
@@ -38,6 +39,15 @@ new client.Gauge({
   async collect() {
     this.set((await db.queryAsync(`SELECT SUM(total) as count FROM reqs`))[0].count as any);
   }
+});
+
+const totalMonthlyApiRequestsLimit = new client.Gauge({
+  name: 'total_monthly_api_requests_limit',
+  help: 'Monthly API requests limit per app',
+  labelNames: ['app']
+});
+Object.entries(config.limits).forEach(([app, { monthly }]) => {
+  totalMonthlyApiRequestsLimit.set({ app }, monthly);
 });
 
 new client.Gauge({
