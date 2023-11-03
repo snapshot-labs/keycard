@@ -44,10 +44,12 @@ new client.Gauge({
 const totalMonthlyApiRequestsLimit = new client.Gauge({
   name: 'total_monthly_api_requests_limit',
   help: 'Monthly API requests limit per app',
-  labelNames: ['app']
+  labelNames: ['app', 'tier']
 });
-Object.entries(config.limits).forEach(([app, { monthly }]) => {
-  totalMonthlyApiRequestsLimit.set({ app }, monthly);
+Object.entries(config.limits).forEach(([app, tierLimit]) => {
+  Object.entries(tierLimit).forEach(([tier, limit]) => {
+    totalMonthlyApiRequestsLimit.set({ app, tier }, limit.monthly);
+  });
 });
 
 new client.Gauge({
