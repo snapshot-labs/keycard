@@ -2,7 +2,7 @@ insert into
   `keys` (
     `active`,
     `created`,
-    `level`,
+    `tier`,
     `key`,
     `name`,
     `owner`,
@@ -14,16 +14,16 @@ values
     DEFAULT,
     DEFAULT,
     '123456789',
-    'test API key',
+    'API key for free users',
     'test',
     DEFAULT
   ),
   (
     DEFAULT,
     DEFAULT,
-    'integrator',
+    1,
     '987654321',
-    'API key Integrator Role',
+    'API key for pro users',
     'test1',
     DEFAULT
   );
