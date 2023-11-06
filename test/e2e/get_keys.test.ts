@@ -39,7 +39,8 @@ describe('POST / { method: get_keys }', () => {
         tier: 0,
         month: 1
       });
-      expect(response.body.result[apps[0]].limits.monthly).toBe(limits[apps[0]][0].monthly);
+      console.log(response.body.result[apps[0]]);
+      expect(response.body.result[apps[0]].limits[0].monthly).toBe(limits[apps[0]][0].monthly);
       expect(parseInt(response.body.result[apps[0]].reset)).toBeGreaterThan(Date.now() / 1e3);
     });
   });
