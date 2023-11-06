@@ -101,11 +101,20 @@ export const getKeys = async (app: string) => {
     );
     const result = {
       [app]: {
+        // TODO: `monthly_counts` will be deprecated in the future
+        monthly_counts: activeKeys.reduce((obj, { key, month_total }) => {
+          obj[key] = month_total ?? 0;
+          return obj;
+        }, {}),
         key_counts: activeKeys.reduce((obj, { key, tier, month_total }) => {
           obj[key] = { tier, month: month_total ?? 0 };
           return obj;
         }, {}),
-        limits: limits[app],
+        limits: {
+          ...limits[app],
+          // TODO: `monthly` will be deprecated in the future
+          monthly: 2e6
+        },
         reset
       }
     };
