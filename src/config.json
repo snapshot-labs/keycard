@@ -1,10 +1,20 @@
 {
   "limits": {
     "snapshot-hub": {
-      "monthly": 2e6
+      "0": {
+        "monthly": 2e6
+      },
+      "1": {
+        "monthly": 5e6
+      }
     },
     "score-api": {
-      "monthly": 2e6
+      "0": {
+        "monthly": 2e6
+      },
+      "1": {
+        "monthly": 2e6
+      }
     }
   }
 }

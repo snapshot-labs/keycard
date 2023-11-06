@@ -6,9 +6,9 @@ services:
     cap_add:
       - SYS_NICE
     ports:
-      - '3306:3306'
+      - '3305:3306'
     environment:
-      - MYSQL_ROOT_PASSWORD=default_password
+      - MYSQL_ROOT_PASSWORD=root
       - MYSQL_DATABASE=keycard
     volumes:
       - "./src/helpers/schema.sql:/docker-entrypoint-initdb.d/1.sql"

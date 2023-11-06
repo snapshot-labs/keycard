@@ -34,7 +34,7 @@ const getKey = async (key: string, app: string): Promise<Key | null> => {
 const getActiveKeys = async (app: string) => {
   const keys = await db.queryAsync(
     `
-      SELECT k.key, m.total as month_total
+      SELECT k.key, k.tier, m.total as month_total
       FROM \`keys\` k
         LEFT JOIN reqs_monthly m ON m.key = k.key
         AND m.month = DATE_FORMAT(CURRENT_TIMESTAMP, '%m-%Y')
@@ -96,17 +96,26 @@ export const getKeys = async (app: string) => {
     if (!apps.includes(app)) return { error: 'App is not allowed', code: 401 };
     const activeKeys = await getActiveKeys(app);
     // Reset timestamp is the first day of the next month
-    const resetTimestamp = (
-      Date.UTC(new Date().getFullYear(), new Date().getMonth() + 1, 1) / 1e3
-    ).toFixed(0);
+    const reset = Number(
+      (Date.UTC(new Date().getFullYear(), new Date().getMonth() + 1, 1) / 1e3).toFixed(0)
+    );
     const result = {
       [app]: {
+        // TODO: `monthly_counts` will be deprecated in the future
         monthly_counts: activeKeys.reduce((obj, { key, month_total }) => {
           obj[key] = month_total ?? 0;
           return obj;
         }, {}),
-        limits: limits[app],
-        reset: resetTimestamp
+        key_counts: activeKeys.reduce((obj, { key, tier, month_total }) => {
+          obj[key] = { tier, month: month_total ?? 0 };
+          return obj;
+        }, {}),
+        limits: {
+          ...limits[app],
+          // TODO: `monthly` will be deprecated in the future
+          monthly: 2e6
+        },
+        reset
       }
     };
     return result;

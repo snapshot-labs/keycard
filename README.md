@@ -2,6 +2,15 @@
 
 This API is responsible for managing keys and counts for all snapshot APIs
 
+## Limits
+
+| Tier | Id | Max Requests (hub) | Max Requests (score-api)
+| --- | --- | --- | --- |
+| Free | 0 | 2M | 2M |
+| Pro | 1 | 5M | 2M |
+
+Make sure to update limits in `src/config.json`
+
 ## Getting Started (Local Development)
 
 This API depends on a couple of services:
@@ -15,6 +24,7 @@ You can use the docker-compose service to start one up quickly with:
 
 ```sh
 docker compose up 
+# or docker-compose up --build if you want to rebuild the image (will run yarn install and sql from seed.sql)
 # this will start mysql on port 3306
 # and the api on port 3007
 ```

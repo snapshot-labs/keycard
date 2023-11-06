@@ -36,7 +36,11 @@ describe('POST / { method: get_keys }', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.result[apps[0]].monthly_counts[KEY]).toBe(1);
-      expect(response.body.result[apps[0]].limits.monthly).toBe(limits[apps[0]].monthly);
+      expect(response.body.result[apps[0]].key_counts[KEY]).toMatchObject({
+        tier: 0,
+        month: 1
+      });
+      expect(response.body.result[apps[0]].limits.monthly).toBe(limits[apps[0]][0].monthly);
       expect(parseInt(response.body.result[apps[0]].reset)).toBeGreaterThan(Date.now() / 1e3);
     });
   });
