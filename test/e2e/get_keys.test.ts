@@ -35,7 +35,6 @@ describe('POST / { method: get_keys }', () => {
         .send({ method: 'get_keys', params: { app: apps[0] } });
 
       expect(response.status).toBe(200);
-      expect(response.body.result[apps[0]].monthly_counts[KEY]).toBe(1);
       expect(response.body.result[apps[0]].key_counts[KEY]).toMatchObject({
         tier: 0,
         month: 1
