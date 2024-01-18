@@ -8,6 +8,7 @@ This API is responsible for managing keys and counts for all snapshot APIs
 | --- | --- | --- | --- |
 | Free | 0 | 2M | 2M |
 | Pro | 1 | 5M | 2M |
+| Extra | 2 | 4M | 2M |
 
 Make sure to update limits in `src/config.json`
 
