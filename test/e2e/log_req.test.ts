@@ -1,8 +1,8 @@
 import request from 'supertest';
-import db from '../../src/helpers/mysql';
 import { limits } from '../../src/config.json';
+import db from '../../src/helpers/mysql';
 import { updateTotal } from '../../src/writer';
-import { HOST, cleanupDb } from '../utils';
+import { cleanupDb, HOST } from '../utils';
 
 const NAME = 'test-log-req-name';
 const ADDRESS = '0x0000000000000000000000000000000000000000';

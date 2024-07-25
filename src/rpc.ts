@@ -1,9 +1,9 @@
-import express from 'express';
-import { name as packageName, version as packageVersion } from '../package.json';
-import { rpcError, rpcSuccess } from './helpers/utils';
-import { authChecker } from './helpers/auth';
-import { getKeys, logReq, generateKey, whitelistAddress } from './methods';
 import { capture } from '@snapshot-labs/snapshot-sentry';
+import express from 'express';
+import { authChecker } from './helpers/auth';
+import { rpcError, rpcSuccess } from './helpers/utils';
+import { generateKey, getKeys, logReq, whitelistAddress } from './methods';
+import { name as packageName, version as packageVersion } from '../package.json';
 
 const router = express.Router();
 

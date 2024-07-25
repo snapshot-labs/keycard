@@ -1,7 +1,7 @@
 import request from 'supertest';
+import { limits } from '../../src/config.json';
 import db from '../../src/helpers/mysql';
 import { updateTotal } from '../../src/writer';
-import { limits } from '../../src/config.json';
 import { cleanupDb, HOST } from '../utils';
 
 const NAME = 'test-get-keys-name';
