@@ -9,6 +9,7 @@ CREATE TABLE `keys` (
   PRIMARY KEY (`owner`),
   INDEX `key` (`key`),
   INDEX owner (owner),
+  INDEX active (active),
   INDEX created (created)
 );
 
