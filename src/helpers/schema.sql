@@ -36,5 +36,6 @@ CREATE TABLE reqs_monthly (
   month VARCHAR(32) NOT NULL,
   total INT(12) NOT NULL DEFAULT 0,
   PRIMARY KEY (`key`, month, app),
-  INDEX total (total)
+  INDEX total (total),
+  INDEX month (month)
 );

@@ -25,11 +25,15 @@ new client.Gauge({
   help: 'Number of Snapshot subscribers by status',
   labelNames: ['status'],
   async collect() {
-    const subscriberCounts = await collectSubscriberCounts();
+    try {
+      const subscriberCounts = await collectSubscriberCounts();
 
-    subscriberCounts.forEach(({ status, count }) => {
-      this.set({ status }, count);
-    });
+      subscriberCounts.forEach(({ status, count }) => {
+        this.set({ status }, count);
+      });
+    } catch (e) {
+      capture(e);
+    }
   }
 });
 
@@ -37,7 +41,11 @@ new client.Gauge({
   name: 'total_api_requests_count',
   help: 'Total number of API requests',
   async collect() {
-    this.set((await db.queryAsync(`SELECT SUM(total) as count FROM reqs`))[0].count as any);
+    try {
+      this.set((await db.queryAsync(`SELECT SUM(total) as count FROM reqs`))[0].count as any);
+    } catch (e) {
+      capture(e);
+    }
   }
 });
 
@@ -57,27 +65,31 @@ new client.Gauge({
   help: 'Total number of API requests for each month',
   labelNames: ['month', 'year', 'app', 'type'],
   async collect() {
-    const results = await db.queryAsync(
-      `SELECT
-          SUM(total) as total,
-          MAX(total) as max,
-          MIN(total) as min,
-          AVG(total) as average,
-          DATE_FORMAT(CURRENT_TIMESTAMP, '%m') as periodMonth,
-          DATE_FORMAT(CURRENT_TIMESTAMP, '%Y') as periodYear,
-          app
-          FROM reqs_monthly
-          WHERE month = DATE_FORMAT(CURRENT_TIMESTAMP, '%m-%Y')
-          GROUP BY app`
-    );
+    try {
+      const results = await db.queryAsync(
+        `SELECT
+            SUM(total) as total,
+            MAX(total) as max,
+            MIN(total) as min,
+            AVG(total) as average,
+            DATE_FORMAT(CURRENT_TIMESTAMP, '%m') as periodMonth,
+            DATE_FORMAT(CURRENT_TIMESTAMP, '%Y') as periodYear,
+            app
+            FROM reqs_monthly
+            WHERE month = DATE_FORMAT(CURRENT_TIMESTAMP, '%m-%Y')
+            GROUP BY app`
+      );
 
-    results.forEach(result => {
-      ['total', 'min', 'max', 'average'].forEach(type => {
-        this.set(
-          { month: result.periodMonth, year: result.periodYear, app: result.app, type },
-          result[type] as any
-        );
+      results.forEach(result => {
+        ['total', 'min', 'max', 'average'].forEach(type => {
+          this.set(
+            { month: result.periodMonth, year: result.periodYear, app: result.app, type },
+            result[type] as any
+          );
+        });
       });
-    });
+    } catch (e) {
+      capture(e);
+    }
   }
 });

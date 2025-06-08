@@ -21,4 +21,13 @@ const db: any = mysql.createPool({
   database: config.path?.[0]
 });
 
+export const closeDatabase = (): Promise<void> => {
+  return new Promise(resolve => {
+    db.end(() => {
+      console.log('Database connection pool closed.');
+      resolve();
+    });
+  });
+};
+
 export default db;
