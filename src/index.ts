@@ -5,6 +5,7 @@ import cors from 'cors';
 import express from 'express';
 import initMetrics from './helpers/metrics';
 import { rpcError } from './helpers/utils';
+import { closeDatabase } from './helpers/mysql';
 import rpc from './rpc';
 
 const app = express();
@@ -26,4 +27,24 @@ app.use((_, res) => {
   rpcError(res, 404, {}, '');
 });
 
-app.listen(PORT, () => console.log(`Listening at http://localhost:${PORT}`));
+const server = app.listen(PORT, () => console.log(`Listening at http://localhost:${PORT}`));
+
+const gracefulShutdown = async (signal: string) => {
+  console.log(`Received ${signal}. Starting graceful shutdown...`);
+
+  server.close(async () => {
+    console.log('Express server closed.');
+
+    try {
+      await closeDatabase();
+      console.log('Graceful shutdown completed.');
+      process.exit(0);
+    } catch (error) {
+      console.error('Error during shutdown:', error);
+      process.exit(1);
+    }
+  });
+};
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

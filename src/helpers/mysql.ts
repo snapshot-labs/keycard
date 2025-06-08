@@ -21,18 +21,13 @@ const db: any = mysql.createPool({
   database: config.path?.[0]
 });
 
-process.on('SIGINT', () => {
-  db.end(() => {
-    console.log('Database connection pool closed.');
-    process.exit(0);
+export const closeDatabase = (): Promise<void> => {
+  return new Promise(resolve => {
+    db.end(() => {
+      console.log('Database connection pool closed.');
+      resolve();
+    });
   });
-});
-
-process.on('SIGTERM', () => {
-  db.end(() => {
-    console.log('Database connection pool closed.');
-    process.exit(0);
-  });
-});
+};
 
 export default db;
