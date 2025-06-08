@@ -4,8 +4,8 @@ import compression from 'compression';
 import cors from 'cors';
 import express from 'express';
 import initMetrics from './helpers/metrics';
-import { rpcError } from './helpers/utils';
 import { closeDatabase } from './helpers/mysql';
+import { rpcError } from './helpers/utils';
 import rpc from './rpc';
 
 const app = express();
