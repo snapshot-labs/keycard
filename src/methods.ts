@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { getAddress } from '@ethersproject/address';
 import { verifyMessage } from '@ethersproject/wallet';
 import { capture } from '@snapshot-labs/snapshot-sentry';
@@ -127,8 +128,10 @@ export const whitelistAddress = async (params: any) => {
     } catch (e) {
       return { error: 'Invalid address', code: 400 };
     }
-    const success = await createNewKey(address, name);
-    return { success };
+    await createNewKey(address, name);
+    const key = sha256(randomUUID() + address);
+    await updateKey(key, address);
+    return { success: true, key };
   } catch (e: any) {
     if (e.code === 'ER_DUP_ENTRY') return { error: 'Address already whitelisted', code: 409 };
     if (e.code === 'ER_DATA_TOO_LONG') return { error: 'Name too long', code: 400 };
