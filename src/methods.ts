@@ -57,7 +57,7 @@ export const generateKey = async (params: any) => {
     let signer: string;
     try {
       signer = verifyMessage('generateKey', params.sig);
-    } catch (e: any) {
+    } catch {
       return { error: 'Invalid signature', code: 400 };
     }
     console.log('Generate key request from', signer, 'with sig', params.sig);
@@ -125,7 +125,7 @@ export const whitelistAddress = async (params: any) => {
     if (!address) return { error: 'Missing address', code: 400 };
     try {
       address = getAddress(address);
-    } catch (e) {
+    } catch {
       return { error: 'Invalid address', code: 400 };
     }
     await createNewKey(address, name);
