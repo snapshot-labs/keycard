@@ -111,18 +111,18 @@ curl --location 'https://keycard.snapshot.org/' \
 
 ### whitelist
 
-This method is used by laser to whitelist new address
+This method whitelists a new address and returns a generated API key. It does
+not require the apps secret, so it can be called directly from the Snapshot UI.
 
 ```sh
 curl --location 'https://keycard.snapshot.org/' \
 --header 'accept: application/json' \
 --header 'content-type: application/json' \
---header 'secret: <APP_SECRET>' \
 --data '{
     "jsonrpc": "2.0",
     "method": "whitelist",
     "params": {
-        "owner": "<OWNER_ADDRESS>",
+        "address": "<OWNER_ADDRESS>",
         "name": "<NAME>"
     },
     "id": "123456789"

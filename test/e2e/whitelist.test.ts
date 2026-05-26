@@ -7,19 +7,32 @@ const ADDRESS = '0x0000000000000000000000000000000000000001';
 
 describe('POST / { method: whitelist }', () => {
   beforeEach(async () => {
-    await cleanupDb();
+    await cleanupDb(NAME);
   });
 
   afterAll(async () => {
-    await cleanupDb();
+    await cleanupDb(NAME);
     return db.endAsync();
   });
 
   describe('on a valid payload', () => {
-    it('whitelists the given address', async () => {
+    it('whitelists the given address and returns a key', async () => {
       const response = await request(HOST)
         .post('/')
         .set({ secret: process.env.SECRET })
+        .send({
+          method: 'whitelist',
+          params: { name: NAME, address: ADDRESS }
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.result.success).toBe(true);
+      expect(response.body.result.key).toHaveLength(64);
+    });
+
+    it('whitelists without the apps secret', async () => {
+      const response = await request(HOST)
+        .post('/')
         .send({
           method: 'whitelist',
           params: { name: NAME, address: ADDRESS }
