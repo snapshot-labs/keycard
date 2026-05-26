@@ -48,7 +48,10 @@ const getActiveKeys = async (app: string) => {
 };
 
 const isWhitelist = async (address: string) => {
-  const [whitelisted] = await db.queryAsync('SELECT * FROM `keys` WHERE owner = ?', [address]);
+  const [whitelisted] = await db.queryAsync(
+    'SELECT * FROM `keys` WHERE owner = ?',
+    [address]
+  );
   return !!whitelisted;
 };
 
@@ -57,7 +60,7 @@ export const generateKey = async (params: any) => {
     let signer: string;
     try {
       signer = verifyMessage('generateKey', params.sig);
-    } catch (e: any) {
+    } catch {
       return { error: 'Invalid signature', code: 400 };
     }
     console.log('Generate key request from', signer, 'with sig', params.sig);
@@ -66,8 +69,8 @@ export const generateKey = async (params: any) => {
     const key = sha256(params.sig + signer);
     await updateKey(key, signer);
     return { key };
-  } catch (e) {
-    capture(e, { context: { params } });
+  } catch (err) {
+    capture(err, { context: { params } });
     return { error: 'Error while generating key', code: 500 };
   }
 };
@@ -82,12 +85,12 @@ export const logReq = async (key: string, app: string) => {
     if (!keyData?.active) return { error: 'Key is not active', code: 401 };
 
     // Increase the total count for this key, but don't wait for it to finish.
-    updateTotal(keyData.key, app).catch(e => {
-      capture(e, { key, app });
+    updateTotal(keyData.key, app).catch(err => {
+      capture(err, { key, app });
     });
     return { success: true };
-  } catch (e) {
-    capture(e, { context: { key, app } });
+  } catch (err) {
+    capture(err, { context: { key, app } });
     return { error: 'Error while increasing count', code: 500 };
   }
 };
@@ -98,7 +101,9 @@ export const getKeys = async (app: string) => {
     const activeKeys = await getActiveKeys(app);
     // Reset timestamp is the first day of the next month
     const reset = Number(
-      (Date.UTC(new Date().getFullYear(), new Date().getMonth() + 1, 1) / 1e3).toFixed(0)
+      (
+        Date.UTC(new Date().getFullYear(), new Date().getMonth() + 1, 1) / 1e3
+      ).toFixed(0)
     );
     const result = {
       [app]: {
@@ -111,8 +116,8 @@ export const getKeys = async (app: string) => {
       }
     };
     return result;
-  } catch (e) {
-    capture(e, { context: { app } });
+  } catch (err) {
+    capture(err, { context: { app } });
     return { error: 'Error while getting keys', code: 500 };
   }
 };
@@ -125,17 +130,19 @@ export const whitelistAddress = async (params: any) => {
     if (!address) return { error: 'Missing address', code: 400 };
     try {
       address = getAddress(address);
-    } catch (e) {
+    } catch {
       return { error: 'Invalid address', code: 400 };
     }
     await createNewKey(address, name);
     const key = sha256(randomUUID() + address);
     await updateKey(key, address);
     return { success: true, key };
-  } catch (e: any) {
-    if (e.code === 'ER_DUP_ENTRY') return { error: 'Address already whitelisted', code: 409 };
-    if (e.code === 'ER_DATA_TOO_LONG') return { error: 'Name too long', code: 400 };
-    capture(e, { context: { params } });
+  } catch (err: any) {
+    if (err.code === 'ER_DUP_ENTRY')
+      return { error: 'Address already whitelisted', code: 409 };
+    if (err.code === 'ER_DATA_TOO_LONG')
+      return { error: 'Name too long', code: 400 };
+    capture(err, { context: { params } });
     return { error: 'Error while whitelisting address', code: 500 };
   }
 };

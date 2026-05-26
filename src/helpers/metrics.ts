@@ -5,12 +5,18 @@ import db from './mysql';
 import config from '../config.json';
 
 export default function initMetrics(app: Express) {
-  init(app, { whitelistedPath: [/^\/$/], errorHandler: (e: any) => capture(e), db });
+  init(app, {
+    whitelistedPath: [/^\/$/],
+    errorHandler: (e: any) => capture(e),
+    db
+  });
 }
 
 async function collectSubscriberCounts() {
   const subscriberCounts = await Promise.all([
-    db.queryAsync('SELECT count(*) as count FROM `keys` WHERE `key` IS NOT NULL'),
+    db.queryAsync(
+      'SELECT count(*) as count FROM `keys` WHERE `key` IS NOT NULL'
+    ),
     db.queryAsync('SELECT count(*) as count FROM `keys` WHERE `key` IS NULL')
   ]);
 
@@ -31,8 +37,8 @@ new client.Gauge({
       subscriberCounts.forEach(({ status, count }) => {
         this.set({ status }, count);
       });
-    } catch (e) {
-      capture(e);
+    } catch (err) {
+      capture(err);
     }
   }
 });
@@ -42,9 +48,12 @@ new client.Gauge({
   help: 'Total number of API requests',
   async collect() {
     try {
-      this.set((await db.queryAsync(`SELECT SUM(total) as count FROM reqs`))[0].count as any);
-    } catch (e) {
-      capture(e);
+      this.set(
+        (await db.queryAsync(`SELECT SUM(total) as count FROM reqs`))[0]
+          .count as any
+      );
+    } catch (err) {
+      capture(err);
     }
   }
 });
@@ -83,13 +92,18 @@ new client.Gauge({
       results.forEach(result => {
         ['total', 'min', 'max', 'average'].forEach(type => {
           this.set(
-            { month: result.periodMonth, year: result.periodYear, app: result.app, type },
+            {
+              month: result.periodMonth,
+              year: result.periodYear,
+              app: result.app,
+              type
+            },
             result[type] as any
           );
         });
       });
-    } catch (e) {
-      capture(e);
+    } catch (err) {
+      capture(err);
     }
   }
 });

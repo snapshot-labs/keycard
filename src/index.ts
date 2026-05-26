@@ -11,7 +11,7 @@ import rpc from './rpc';
 const app = express();
 const PORT = process.env.PORT || 3007;
 
-initLogger(app);
+initLogger();
 initMetrics(app);
 
 app.disable('x-powered-by');
@@ -27,7 +27,9 @@ app.use((_, res) => {
   rpcError(res, 404, {}, '');
 });
 
-const server = app.listen(PORT, () => console.log(`Listening at http://localhost:${PORT}`));
+const server = app.listen(PORT, () =>
+  console.log(`Listening at http://localhost:${PORT}`)
+);
 
 const gracefulShutdown = async (signal: string) => {
   console.log(`Received ${signal}. Starting graceful shutdown...`);
@@ -39,8 +41,8 @@ const gracefulShutdown = async (signal: string) => {
       await closeDatabase();
       console.log('Graceful shutdown completed.');
       process.exit(0);
-    } catch (error) {
-      console.error('Error during shutdown:', error);
+    } catch (err) {
+      console.error('Error during shutdown:', err);
       process.exit(1);
     }
   });

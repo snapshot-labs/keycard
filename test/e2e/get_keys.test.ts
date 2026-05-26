@@ -22,11 +22,10 @@ describe('POST / { method: get_keys }', () => {
     });
 
     it('returns the requests usage of each key', async () => {
-      await db.queryAsync('INSERT INTO `keys` (owner, name, `key`) VALUES (?, ?, ?)', [
-        ADDRESS,
-        NAME,
-        KEY
-      ]);
+      await db.queryAsync(
+        'INSERT INTO `keys` (owner, name, `key`) VALUES (?, ?, ?)',
+        [ADDRESS, NAME, KEY]
+      );
       await updateTotal(KEY, apps[0]);
 
       const response = await request(HOST)
@@ -39,8 +38,12 @@ describe('POST / { method: get_keys }', () => {
         tier: 0,
         month: 1
       });
-      expect(response.body.result[apps[0]].limits[0].monthly).toBe(limits[apps[0]][0].monthly);
-      expect(parseInt(response.body.result[apps[0]].reset)).toBeGreaterThan(Date.now() / 1e3);
+      expect(response.body.result[apps[0]].limits[0].monthly).toBe(
+        limits[apps[0]][0].monthly
+      );
+      expect(parseInt(response.body.result[apps[0]].reset)).toBeGreaterThan(
+        Date.now() / 1e3
+      );
     });
   });
 
