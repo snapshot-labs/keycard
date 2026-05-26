@@ -46,11 +46,10 @@ describe('POST / { method: log_req }', () => {
 
   describe('when the key is not active', () => {
     it('returns a 401 error', async () => {
-      await db.queryAsync('INSERT INTO `keys` (owner, name, active, `key`) VALUES (?, ?, 0, ?)', [
-        ADDRESS,
-        NAME,
-        KEY
-      ]);
+      await db.queryAsync(
+        'INSERT INTO `keys` (owner, name, active, `key`) VALUES (?, ?, 0, ?)',
+        [ADDRESS, NAME, KEY]
+      );
 
       const response = await request(HOST)
         .post('/')
@@ -64,15 +63,17 @@ describe('POST / { method: log_req }', () => {
 
   describe('when the key is active', () => {
     it('increments the key total usage', async () => {
-      await db.queryAsync('INSERT INTO `keys` (owner, name, `key`) VALUES (?, ?, ?)', [
-        ADDRESS,
-        NAME,
-        KEY
-      ]);
+      await db.queryAsync(
+        'INSERT INTO `keys` (owner, name, `key`) VALUES (?, ?, ?)',
+        [ADDRESS, NAME, KEY]
+      );
       await updateTotal(KEY, apps[0]);
 
       const { total: beforeTotal, last_active: beforeLastActive } = (
-        await db.queryAsync('SELECT total, last_active from reqs WHERE `key` = ?', KEY)
+        await db.queryAsync(
+          'SELECT total, last_active from reqs WHERE `key` = ?',
+          KEY
+        )
       )[0];
       const { total: beforeDailyTotal } = (
         await db.queryAsync(
@@ -97,7 +98,10 @@ describe('POST / { method: log_req }', () => {
       await new Promise(r => setTimeout(r, 1000));
 
       const { total: afterTotal, last_active: afterLastActive } = (
-        await db.queryAsync('SELECT total, last_active from reqs WHERE `key` = ?', KEY)
+        await db.queryAsync(
+          'SELECT total, last_active from reqs WHERE `key` = ?',
+          KEY
+        )
       )[0];
       const { total: afterDailyTotal } = (
         await db.queryAsync(

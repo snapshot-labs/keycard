@@ -7,7 +7,16 @@ export async function cleanupDb(key = '') {
     'DELETE FROM `keys` where `key` = ? OR `key` IS NULL OR name = ? OR owner = ?',
     [key, key, key]
   );
-  await db.queryAsync('DELETE FROM `reqs` where `key` = ? OR `key` IS NULL', key);
-  await db.queryAsync('DELETE FROM `reqs_daily` where `key` = ? OR `key` IS NULL', key);
-  await db.queryAsync('DELETE FROM `reqs_monthly` where `key` = ? OR `key` IS NULL', key);
+  await db.queryAsync(
+    'DELETE FROM `reqs` where `key` = ? OR `key` IS NULL',
+    key
+  );
+  await db.queryAsync(
+    'DELETE FROM `reqs_daily` where `key` = ? OR `key` IS NULL',
+    key
+  );
+  await db.queryAsync(
+    'DELETE FROM `reqs_monthly` where `key` = ? OR `key` IS NULL',
+    key
+  );
 }

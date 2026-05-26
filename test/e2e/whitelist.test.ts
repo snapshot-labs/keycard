@@ -68,7 +68,10 @@ describe('POST / { method: whitelist }', () => {
 
   describe('when the address is already whitelisted', () => {
     it('returns a 409 error', async () => {
-      await db.queryAsync('INSERT INTO `keys` (owner, name) VALUES (?, ?)', [ADDRESS, NAME]);
+      await db.queryAsync('INSERT INTO `keys` (owner, name) VALUES (?, ?)', [
+        ADDRESS,
+        NAME
+      ]);
 
       const response = await request(HOST)
         .post('/')
