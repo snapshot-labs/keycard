@@ -1,8 +1,16 @@
 name: Lint
 
-on: [push]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   lint:
+    strategy:
+      matrix:
+        target: ['22']
     uses: snapshot-labs/actions/.github/workflows/lint.yml@main
+    with:
+      target: ${{ matrix.target }}
     secrets: inherit

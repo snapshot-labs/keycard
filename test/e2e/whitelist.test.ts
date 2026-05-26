@@ -7,11 +7,11 @@ const ADDRESS = '0x0000000000000000000000000000000000000001';
 
 describe('POST / { method: whitelist }', () => {
   beforeEach(async () => {
-    await cleanupDb();
+    await cleanupDb(ADDRESS);
   });
 
   afterAll(async () => {
-    await cleanupDb();
+    await cleanupDb(ADDRESS);
     return db.endAsync();
   });
 
