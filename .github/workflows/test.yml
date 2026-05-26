@@ -7,7 +7,11 @@ on:
 
 jobs:
   test:
+    strategy:
+      matrix:
+        target: ['22']
     uses: snapshot-labs/actions/.github/workflows/test.yml@main
     secrets: inherit
     with:
+      target: ${{ matrix.target }}
       mysql_database_name: keycard_test
