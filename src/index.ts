@@ -12,7 +12,7 @@ const app = express();
 const PORT = process.env.PORT || 3007;
 
 initLogger();
-initMetrics(app);
+const { stop: stopMetrics } = initMetrics(app);
 
 app.disable('x-powered-by');
 app.use(express.json({ limit: '4mb' }));
@@ -38,6 +38,7 @@ const gracefulShutdown = async (signal: string) => {
     console.log('Express server closed.');
 
     try {
+      stopMetrics();
       await closeDatabase();
       console.log('Graceful shutdown completed.');
       process.exit(0);

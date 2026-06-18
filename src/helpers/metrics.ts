@@ -5,11 +5,13 @@ import db from './mysql';
 import config from '../config.json';
 
 export default function initMetrics(app: Express) {
-  init(app, {
+  const { stop } = init(app, {
     whitelistedPath: [/^\/$/],
     errorHandler: (e: any) => capture(e),
     db
   });
+
+  return { stop };
 }
 
 async function collectSubscriberCounts() {
