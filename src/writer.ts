@@ -1,8 +1,5 @@
 import db from './helpers/mysql';
 
-// Tier assigned to newly whitelisted keys. Maps to the "Trail" tier (id 3,
-// 200k requests/month) defined in src/config.json. Users on this tier reach
-// out to the team to be upgraded to a higher tier.
 export const DEFAULT_TIER = 3;
 
 export const updateTotal = async (key: string, app: string) => {
