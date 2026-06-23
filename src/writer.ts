@@ -1,5 +1,6 @@
 import db from './helpers/mysql';
 
+// Trial tier (id 3). Keep in sync with the `tier` column default in helpers/schema.sql.
 export const DEFAULT_TIER = 3;
 
 export const updateTotal = async (key: string, app: string) => {

@@ -9,9 +9,9 @@ This API is responsible for managing keys and counts for all snapshot APIs
 | Free | 0 | 2M | 2M |
 | Pro | 1 | 5M | 2M |
 | Extra | 2 | 4M | 2M |
-| Trail | 3 | 200k | 200k |
+| Trial | 3 | 200k | 200k |
 
-New keys created via the `whitelist` method default to the **Trail** tier (id `3`).
+New keys created via the `whitelist` method default to the **Trial** tier (id `3`).
 
 Make sure to update limits in `src/config.json`
 
