@@ -1,5 +1,6 @@
 import request from 'supertest';
 import db from '../../src/helpers/mysql';
+import { DEFAULT_TIER } from '../../src/writer';
 import { cleanupDb, HOST } from '../utils';
 
 const NAME = 'test-whitelist-name';
@@ -27,6 +28,22 @@ describe('POST / { method: whitelist }', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.result.success).toBe(true);
+    });
+
+    it('assigns the default tier to the new key', async () => {
+      await request(HOST)
+        .post('/')
+        .set({ secret: process.env.SECRET })
+        .send({
+          method: 'whitelist',
+          params: { name: NAME, address: ADDRESS }
+        });
+
+      const [row] = await db.queryAsync(
+        'SELECT tier FROM `keys` WHERE owner = ?',
+        [ADDRESS]
+      );
+      expect(row.tier).toBe(DEFAULT_TIER);
     });
   });
 

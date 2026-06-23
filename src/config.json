@@ -9,6 +9,9 @@
       },
       "2": {
         "monthly": 4e6
+      },
+      "3": {
+        "monthly": 2e5
       }
     },
     "score-api": {
@@ -20,6 +23,9 @@
       },
       "2": {
         "monthly": 2e6
+      },
+      "3": {
+        "monthly": 2e5
       }
     }
   }
