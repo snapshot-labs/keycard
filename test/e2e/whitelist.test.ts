@@ -28,6 +28,22 @@ describe('POST / { method: whitelist }', () => {
       expect(response.status).toBe(200);
       expect(response.body.result.success).toBe(true);
     });
+
+    it('creates the new key on the Free tier (0)', async () => {
+      await request(HOST)
+        .post('/')
+        .set({ secret: process.env.SECRET })
+        .send({
+          method: 'whitelist',
+          params: { name: NAME, address: ADDRESS }
+        });
+
+      const [row] = await db.queryAsync(
+        'SELECT tier FROM `keys` WHERE owner = ?',
+        [ADDRESS]
+      );
+      expect(row.tier).toBe(0);
+    });
   });
 
   describe('when the name is missing', () => {

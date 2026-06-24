@@ -2,7 +2,7 @@
   "limits": {
     "snapshot-hub": {
       "0": {
-        "monthly": 2e6
+        "monthly": 2e5
       },
       "1": {
         "monthly": 5e6
@@ -13,7 +13,7 @@
     },
     "score-api": {
       "0": {
-        "monthly": 2e6
+        "monthly": 2e5
       },
       "1": {
         "monthly": 2e6
