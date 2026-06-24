@@ -6,12 +6,11 @@ This API is responsible for managing keys and counts for all snapshot APIs
 
 | Tier | Id | Max Requests (hub) | Max Requests (score-api)
 | --- | --- | --- | --- |
-| Free | 0 | 2M | 2M |
+| Free | 0 | 200k | 200k |
 | Pro | 1 | 5M | 2M |
 | Extra | 2 | 4M | 2M |
-| Trial | 3 | 200k | 200k |
 
-New keys created via the `whitelist` method default to the **Trial** tier (id `3`).
+New keys created via the `whitelist` method default to the **Free** tier (id `0`).
 
 Make sure to update limits in `src/config.json`
 

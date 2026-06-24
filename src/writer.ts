@@ -1,8 +1,5 @@
 import db from './helpers/mysql';
 
-// Trial tier (id 3). Keep in sync with the `tier` column default in helpers/schema.sql.
-export const DEFAULT_TIER = 3;
-
 export const updateTotal = async (key: string, app: string) => {
   const sql = `
     INSERT INTO reqs (\`key\`, app, total, last_active) VALUES (?, ?, 1, UNIX_TIMESTAMP())
@@ -26,7 +23,7 @@ export const updateKey = async (key: string, owner: string) => {
 };
 
 export const createNewKey = async (owner: string, name: string) => {
-  const sql = 'INSERT INTO `keys` (owner, name, tier) VALUES (?, ?, ?)';
-  await db.queryAsync(sql, [owner, name, DEFAULT_TIER]);
+  const sql = 'INSERT INTO `keys` (owner, name) VALUES (?, ?)';
+  await db.queryAsync(sql, [owner, name]);
   return true;
 };
