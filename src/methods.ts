@@ -122,6 +122,51 @@ export const getKeys = async (app: string) => {
   }
 };
 
+export const getKeysByOwner = async (params: any) => {
+  try {
+    let { address } = params;
+    try {
+      address = getAddress(address);
+    } catch {
+      return { error: 'Invalid address', code: 400 };
+    }
+
+    const rows = await db.queryAsync(
+      `
+        SELECT \`key\`, owner, name, tier, created, updated, active
+        FROM \`keys\` WHERE owner = ? AND active = 1`,
+      [address]
+    );
+    if (!rows.length) return { keys: [] };
+
+    const keyHashes = rows.map(row => row.key).filter(Boolean);
+    const usageRows = keyHashes.length
+      ? await db.queryAsync(
+          `
+        SELECT \`key\`, app, total FROM reqs_monthly
+        WHERE \`key\` IN (?)
+          AND month = DATE_FORMAT(CURRENT_TIMESTAMP, '%m-%Y')`,
+          [keyHashes]
+        )
+      : [];
+    const usageByKey: Record<string, { app: string; total: number }[]> =
+      usageRows.reduce((acc, { key, app, total }) => {
+        (acc[key] ??= []).push({ app, total });
+        return acc;
+      }, {});
+
+    return {
+      keys: rows.map(({ key, ...rest }) => ({
+        ...rest,
+        usage: usageByKey[key] ?? []
+      }))
+    };
+  } catch (err) {
+    capture(err, { context: { params } });
+    return { error: 'Error while getting keys', code: 500 };
+  }
+};
+
 export const whitelistAddress = async (params: any) => {
   try {
     const { name } = params;
