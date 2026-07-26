@@ -17,9 +17,10 @@ export default function initMetrics(app: Express) {
 new client.Gauge({
   name: 'snapshot_subscriber_counts',
   help: 'Number of Snapshot subscribers',
+  labelNames: ['status'],
   async collect() {
     try {
-      this.set(await db.$count(keys));
+      this.set({ status: 'active' }, await db.$count(keys));
     } catch (err) {
       capture(err);
     }

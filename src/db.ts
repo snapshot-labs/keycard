@@ -10,7 +10,8 @@ export const db = drizzle({
   connection: {
     connectionString: process.env.DATABASE_URL,
     connectionTimeoutMillis: 10e3,
-    query_timeout: 15e3,
+    query_timeout: 20e3,
+    statement_timeout: 15e3,
     idleTimeoutMillis: 30e3,
     maxLifetimeSeconds: 600,
     keepAlive: true,
@@ -33,8 +34,8 @@ export async function runMigrations() {
     await client.query('SELECT pg_advisory_lock($1)', [MIGRATION_LOCK_ID]);
     await migrate(db, { migrationsFolder: 'drizzle' });
   } finally {
-    await client.query('SELECT pg_advisory_unlock($1)', [MIGRATION_LOCK_ID]);
-    client.release();
+    // Destroy the session instead of unlocking: server releases the advisory lock on close.
+    client.release(true);
   }
 }
 
