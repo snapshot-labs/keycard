@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import {
   boolean,
   customType,
+  index,
   integer,
   pgTable,
   primaryKey,
@@ -55,5 +56,8 @@ export const reqsMonthly = pgTable(
     month: text().notNull(),
     total: integer().notNull().default(0)
   },
-  table => [primaryKey({ columns: [table.key, table.month, table.app] })]
+  table => [
+    primaryKey({ columns: [table.key, table.month, table.app] }),
+    index('reqs_monthly_month_app_idx').on(table.month, table.app)
+  ]
 );

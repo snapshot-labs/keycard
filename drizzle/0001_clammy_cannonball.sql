@@ -1,0 +1,1 @@
+CREATE INDEX "reqs_monthly_month_app_idx" ON "reqs_monthly" USING btree ("month","app");
