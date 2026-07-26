@@ -1,6 +1,7 @@
 import request from 'supertest';
-import db from '../../src/helpers/mysql';
+import { closeDatabase, db } from '../../src/db';
 import { whitelistAddress } from '../../src/methods';
+import { keys } from '../../src/schema';
 import { cleanupDb, HOST } from '../utils';
 
 const SIGNATURE =
@@ -14,12 +15,30 @@ describe('POST / { method: generateKey }', () => {
 
   afterAll(async () => {
     await cleanupDb(ADDRESS);
-    return db.endAsync();
+    return closeDatabase();
   });
 
   describe('when the user is whitelisted', () => {
     it('update and return the key', async () => {
       await whitelistAddress({ name: 'test', address: ADDRESS });
+
+      const response = await request(HOST)
+        .post('/')
+        .set({ secret: process.env.SECRET })
+        .send({ method: 'generate_key', params: { sig: SIGNATURE } });
+
+      expect(response.status).toBe(200);
+      expect(response.body.result.key).toHaveLength(64);
+    });
+  });
+
+  describe('when the owner is stored lowercase (legacy rows)', () => {
+    it('still authenticates via citext and returns the key', async () => {
+      await db.insert(keys).values({
+        owner: ADDRESS.toLowerCase(),
+        name: 'test',
+        key: 'test-citext-key'
+      });
 
       const response = await request(HOST)
         .post('/')

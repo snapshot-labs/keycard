@@ -1,29 +1,47 @@
-import db from './helpers/mysql';
+import { eq, sql } from 'drizzle-orm';
+import { db } from './db';
+import { currentMonth, keys, reqs, reqsMonthly } from './schema';
 
 export const updateTotal = async (key: string, app: string) => {
-  const sql = `
-    INSERT INTO reqs (\`key\`, app, total, last_active) VALUES (?, ?, 1, UNIX_TIMESTAMP())
-    ON DUPLICATE KEY UPDATE total = total + 1, last_active = UNIX_TIMESTAMP();
-
-    INSERT INTO reqs_daily (\`key\`, day, app, total) VALUES (?, DATE_FORMAT(CURRENT_TIMESTAMP, '%d-%m-%Y'), ?, 1)
-    ON DUPLICATE KEY UPDATE total = total + 1;
-
-    INSERT INTO reqs_monthly (\`key\`, month, app, total) VALUES (?, DATE_FORMAT(CURRENT_TIMESTAMP, '%m-%Y'), ?, 1)
-    ON DUPLICATE KEY UPDATE total = total + 1;
-  `;
-
-  await db.queryAsync(sql, [key, app, key, app, key, app]);
-  return true;
+  // Independent approximate counters; no cross-row atomicity needed, so no
+  // transaction. A rare partial failure just undercounts by one, self-heals.
+  // Kept sequential on purpose: Promise.all would grab 2 pool connections per
+  // request on this hot path, and the tight single-instance pool makes that
+  // connection pressure cost more than the saved latency.
+  await db
+    .insert(reqs)
+    .values({ key, app, total: 1 })
+    .onConflictDoUpdate({
+      target: [reqs.key, reqs.app],
+      set: { total: sql`${reqs.total} + 1`, last_active: sql`now()` }
+    });
+  await db
+    .insert(reqsMonthly)
+    .values({ key, app, month: currentMonth, total: 1 })
+    .onConflictDoUpdate({
+      target: [reqsMonthly.key, reqsMonthly.month, reqsMonthly.app],
+      set: { total: sql`${reqsMonthly.total} + 1` }
+    });
 };
 
 export const updateKey = async (key: string, owner: string) => {
-  const sql = 'UPDATE `keys` k SET k.key = ? WHERE owner = ?';
-  await db.queryAsync(sql, [key, owner]);
-  return true;
+  const updated = await db
+    .update(keys)
+    .set({ key })
+    .where(eq(keys.owner, owner))
+    .returning({ owner: keys.owner });
+  return updated.length > 0;
 };
 
-export const createNewKey = async (owner: string, name: string) => {
-  const sql = 'INSERT INTO `keys` (owner, name) VALUES (?, ?)';
-  await db.queryAsync(sql, [owner, name]);
-  return true;
+export const createNewKey = async (
+  owner: string,
+  name: string,
+  key: string
+) => {
+  const inserted = await db
+    .insert(keys)
+    .values({ owner, name, key })
+    .onConflictDoNothing({ target: keys.owner })
+    .returning({ owner: keys.owner });
+  return inserted.length > 0;
 };
