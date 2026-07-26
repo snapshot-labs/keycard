@@ -30,7 +30,7 @@ export const keys = pgTable(
     updated: timestamp({ withTimezone: true })
       .notNull()
       .defaultNow()
-      .$onUpdate(() => new Date()),
+      .$onUpdate(() => sql`now()`),
     active: boolean().notNull().default(true)
   },
   table => [uniqueIndex('keys_key_idx').on(table.key)]

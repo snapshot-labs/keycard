@@ -20,7 +20,7 @@ const getKey = async (key: string) => {
 };
 
 const getActiveKeys = async (app: string) => {
-  return await db
+  return db
     .select({
       key: keys.key,
       tier: keys.tier,
@@ -109,7 +109,8 @@ export const whitelistAddress = async (params: any) => {
     const { name } = params;
     let { address } = params;
     if (!name) return { error: 'Missing name', code: 400 };
-    if (name.length > 32) return { error: 'Name too long', code: 400 };
+    if (typeof name !== 'string' || name.length > 32)
+      return { error: 'Name too long', code: 400 };
     if (!address) return { error: 'Missing address', code: 400 };
     try {
       address = getAddress(address);

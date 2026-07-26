@@ -18,8 +18,8 @@ Make sure to update limits in `src/config.json`
 
 This API depends on a couple of services:
 
-- Node.js (>= v16.0.0)
-- PostgreSQL (v14+)
+- Node.js (>= v22.6.0)
+- PostgreSQL (v18 — older versions likely work but are untested)
 
 ### Docker
 

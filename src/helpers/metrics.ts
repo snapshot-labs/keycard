@@ -9,7 +9,8 @@ import { currentMonth, keys, reqs, reqsMonthly } from '../schema';
 export default function initMetrics(app: Express) {
   return init(app, {
     whitelistedPath: [/^\/$/],
-    errorHandler: (e: any) => capture(e)
+    errorHandler: (e: any) => capture(e),
+    db: db.$client
   });
 }
 
