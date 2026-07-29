@@ -150,7 +150,7 @@ export const getKeysByOwner = async (params: any) => {
     const rows = await db.queryAsync(
       `
         SELECT \`key\`, owner, name, tier, created, updated, active
-        FROM \`keys\` WHERE owner = ? AND active = 1`,
+        FROM \`keys\` WHERE owner = ? AND active = 1 AND \`key\` IS NOT NULL`,
       [owner]
     );
     if (!rows.length) return { keys: [] };

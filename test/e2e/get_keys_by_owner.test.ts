@@ -9,7 +9,7 @@ const DOMAIN = { name: 'snapshot', version: '0.1.4' };
 
 const GetKeysSchema = {
   GetKeys: [
-    { name: 'from', type: 'string' },
+    { name: 'from', type: 'address' },
     { name: 'alias', type: 'address' },
     { name: 'timestamp', type: 'uint64' }
   ]
@@ -168,13 +168,16 @@ describe('POST / { method: get_keys_by_owner }', () => {
 
   describe('when the address is not valid', () => {
     it('returns a 400 error', async () => {
-      const wallet = Wallet.createRandom();
-
       const response = await request(HOST)
         .post('/')
         .send({
           method: 'get_keys_by_owner',
-          params: await signedParams(wallet, 'test')
+          params: {
+            from: 'test',
+            alias: Wallet.createRandom().address,
+            timestamp: Math.floor(Date.now() / 1e3),
+            sig: '0x00'
+          }
         });
 
       expect(response.status).toBe(400);

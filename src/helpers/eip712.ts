@@ -4,7 +4,7 @@ const DOMAIN = { name: 'snapshot', version: '0.1.4' };
 
 const GET_KEYS_TYPES = {
   GetKeys: [
-    { name: 'from', type: 'string' },
+    { name: 'from', type: 'address' },
     { name: 'alias', type: 'address' },
     { name: 'timestamp', type: 'uint64' }
   ]

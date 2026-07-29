@@ -119,7 +119,7 @@ Authenticated with an EIP-712 signature from the owner's Snapshot alias, so no
 wallet prompt is needed once an alias is registered:
 
 - Domain: `{ "name": "snapshot", "version": "0.1.4" }`
-- Type: `GetKeys { from: string, alias: address, timestamp: uint64 }`
+- Type: `GetKeys { from: address, alias: address, timestamp: uint64 }`
 - `from` is the owner address, `alias` is the signing alias address, and
   `timestamp` is unix seconds.
 - The signing alias must be registered for `from` on the hub, and less than 90 days old (same window the sequencer applies).
