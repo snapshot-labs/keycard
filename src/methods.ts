@@ -3,6 +3,8 @@ import { getAddress } from '@ethersproject/address';
 import { verifyMessage } from '@ethersproject/wallet';
 import { capture } from '@snapshot-labs/snapshot-sentry';
 import { limits } from './config.json';
+import { isAliasOf } from './helpers/aliases';
+import { recoverGetKeysSigner } from './helpers/eip712';
 import db from './helpers/mysql';
 import { sha256 } from './utils';
 import { createNewKey, updateKey, updateTotal } from './writer';
@@ -63,7 +65,7 @@ export const generateKey = async (params: any) => {
     } catch {
       return { error: 'Invalid signature', code: 400 };
     }
-    console.log('Generate key request from', signer, 'with sig', params.sig);
+    console.log('Generate key request from', signer);
     const whitelisted = await isWhitelist(signer);
     if (!whitelisted) return { error: 'Not whitelisted', code: 401 };
     const key = sha256(params.sig + signer);
@@ -124,18 +126,32 @@ export const getKeys = async (app: string) => {
 
 export const getKeysByOwner = async (params: any) => {
   try {
-    let { address } = params;
+    const { from, alias, timestamp, sig } = params;
+
+    let owner: string;
     try {
-      address = getAddress(address);
+      owner = getAddress(from);
     } catch {
       return { error: 'Invalid address', code: 400 };
     }
+
+    let signer: string;
+    try {
+      signer = recoverGetKeysSigner({ from, alias, timestamp }, sig);
+    } catch {
+      return { error: 'Invalid signature', code: 400 };
+    }
+
+    if (signer !== getAddress(alias))
+      return { error: 'Invalid signature', code: 400 };
+    if (!(await isAliasOf(owner, signer)))
+      return { error: 'Alias not authorized', code: 401 };
 
     const rows = await db.queryAsync(
       `
         SELECT \`key\`, owner, name, tier, created, updated, active
         FROM \`keys\` WHERE owner = ? AND active = 1`,
-      [address]
+      [owner]
     );
     if (!rows.length) return { keys: [] };
 
@@ -156,10 +172,7 @@ export const getKeysByOwner = async (params: any) => {
       }, {});
 
     return {
-      keys: rows.map(({ key, ...rest }) => ({
-        ...rest,
-        usage: usageByKey[key] ?? []
-      }))
+      keys: rows.map(row => ({ ...row, usage: usageByKey[row.key] ?? [] }))
     };
   } catch (err) {
     capture(err, { context: { params } });
