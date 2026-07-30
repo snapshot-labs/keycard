@@ -10,6 +10,7 @@ import { sha256 } from './utils';
 import { createNewKey, updateKey, updateTotal } from './writer';
 
 const apps = Object.keys(limits);
+const SIGNATURE_WINDOW = 300; // 5 minutes before or after the server time
 
 type Key = {
   key: string;
@@ -135,6 +136,10 @@ export const getKeysByOwner = async (params: any) => {
       return { error: 'Invalid address', code: 400 };
     }
 
+    const ts = Date.now() / 1e3;
+    if (timestamp > ts + SIGNATURE_WINDOW || timestamp < ts - SIGNATURE_WINDOW)
+      return { error: 'Signature expired', code: 401 };
+
     let signer: string;
     try {
       signer = recoverGetKeysSigner({ from, alias, timestamp }, sig);
@@ -149,30 +154,16 @@ export const getKeysByOwner = async (params: any) => {
 
     const rows = await db.queryAsync(
       `
-        SELECT \`key\`, owner, name, tier, created, updated, active
+        SELECT \`key\`, name, created
         FROM \`keys\` WHERE owner = ? AND active = 1 AND \`key\` IS NOT NULL`,
       [owner]
     );
-    if (!rows.length) return { keys: [] };
-
-    const keyHashes = rows.map(row => row.key).filter(Boolean);
-    const usageRows = keyHashes.length
-      ? await db.queryAsync(
-          `
-        SELECT \`key\`, app, total FROM reqs_monthly
-        WHERE \`key\` IN (?)
-          AND month = DATE_FORMAT(CURRENT_TIMESTAMP, '%m-%Y')`,
-          [keyHashes]
-        )
-      : [];
-    const usageByKey: Record<string, { app: string; total: number }[]> =
-      usageRows.reduce((acc, { key, app, total }) => {
-        (acc[key] ??= []).push({ app, total });
-        return acc;
-      }, {});
-
     return {
-      keys: rows.map(row => ({ ...row, usage: usageByKey[row.key] ?? [] }))
+      keys: rows.map(row => ({
+        key: row.key,
+        name: row.name,
+        created: row.created
+      }))
     };
   } catch (err) {
     capture(err, { context: { params } });

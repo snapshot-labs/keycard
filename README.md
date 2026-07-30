@@ -113,7 +113,7 @@ curl --location 'https://keycard.snapshot.org/' \
 
 ### get_keys_by_owner
 
-Returns the caller's own keys, including the key values.
+Returns the caller's own active keys, including the key values.
 
 Authenticated with an EIP-712 signature from the owner's Snapshot alias, so no
 wallet prompt is needed once an alias is registered:
@@ -121,7 +121,7 @@ wallet prompt is needed once an alias is registered:
 - Domain: `{ "name": "snapshot", "version": "0.1.4" }`
 - Type: `GetKeys { from: address, alias: address, timestamp: uint64 }`
 - `from` is the owner address, `alias` is the signing alias address, and
-  `timestamp` is unix seconds.
+  `timestamp` is unix seconds, within 5 minutes of server time.
 - The signing alias must be registered for `from` on the hub, and less than 90 days old (same window the sequencer applies).
 
 ```sh

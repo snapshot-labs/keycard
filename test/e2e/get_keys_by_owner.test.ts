@@ -24,9 +24,10 @@ let hub: http.Server;
 async function signedParams(
   wallet: Wallet,
   from: string,
-  alias = wallet.address
+  alias = wallet.address,
+  timestamp = Math.floor(Date.now() / 1e3)
 ) {
-  const message = { from, alias, timestamp: Math.floor(Date.now() / 1e3) };
+  const message = { from, alias, timestamp };
   const sig = await wallet._signTypedData(DOMAIN, GetKeysSchema, message);
 
   return { ...message, sig };
@@ -163,6 +164,40 @@ describe('POST / { method: get_keys_by_owner }', () => {
 
       expect(response.status).toBe(400);
       expect(response.body.error.data).toContain('Invalid signature');
+    });
+  });
+
+  describe('when the signature is expired', () => {
+    it('returns a 401 error on a stale timestamp', async () => {
+      const wallet = Wallet.createRandom();
+      registerAlias(OWNER, wallet.address);
+      const timestamp = Math.floor(Date.now() / 1e3) - 600;
+
+      const response = await request(HOST)
+        .post('/')
+        .send({
+          method: 'get_keys_by_owner',
+          params: await signedParams(wallet, OWNER, wallet.address, timestamp)
+        });
+
+      expect(response.status).toBe(401);
+      expect(response.body.error.data).toContain('Signature expired');
+    });
+
+    it('returns a 401 error on a future timestamp', async () => {
+      const wallet = Wallet.createRandom();
+      registerAlias(OWNER, wallet.address);
+      const timestamp = Math.floor(Date.now() / 1e3) + 600;
+
+      const response = await request(HOST)
+        .post('/')
+        .send({
+          method: 'get_keys_by_owner',
+          params: await signedParams(wallet, OWNER, wallet.address, timestamp)
+        });
+
+      expect(response.status).toBe(401);
+      expect(response.body.error.data).toContain('Signature expired');
     });
   });
 
