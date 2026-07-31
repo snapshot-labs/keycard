@@ -7,10 +7,8 @@ CREATE TABLE `keys` (
   updated INT(11) DEFAULT (UNIX_TIMESTAMP()),
   active BOOLEAN NOT NULL DEFAULT TRUE,
   PRIMARY KEY (`owner`),
-  INDEX `key` (`key`),
-  INDEX owner (owner),
-  INDEX active (active),
-  INDEX created (created)
+  UNIQUE KEY `key` (`key`),
+  INDEX active (active)
 );
 
 CREATE TABLE reqs (
