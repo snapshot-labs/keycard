@@ -73,7 +73,7 @@ export const generateKey = async (params: any) => {
     await updateKey(key, signer);
     return { key };
   } catch (err) {
-    capture(err, { context: { params } });
+    capture(err);
     return { error: 'Error while generating key', code: 500 };
   }
 };
@@ -127,7 +127,7 @@ export const getKeys = async (app: string) => {
 
 export const getKeysByOwner = async (params: any) => {
   try {
-    const { from, alias, timestamp, sig } = params;
+    const { from, alias, timestamp, sig } = params ?? {};
 
     let owner: string;
     try {
@@ -136,7 +136,10 @@ export const getKeysByOwner = async (params: any) => {
       return { error: 'Invalid address', code: 400 };
     }
 
-    const ts = Date.now() / 1e3;
+    if (!Number.isFinite(timestamp))
+      return { error: 'Invalid timestamp', code: 400 };
+
+    const ts = Math.floor(Date.now() / 1e3);
     if (timestamp > ts + SIGNATURE_WINDOW || timestamp < ts - SIGNATURE_WINDOW)
       return { error: 'Signature expired', code: 401 };
 
@@ -166,7 +169,7 @@ export const getKeysByOwner = async (params: any) => {
       }))
     };
   } catch (err) {
-    capture(err, { context: { params } });
+    capture(err, { context: { from: params?.from, alias: params?.alias } });
     return { error: 'Error while getting keys', code: 500 };
   }
 };

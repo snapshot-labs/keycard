@@ -33,9 +33,9 @@ export async function isAliasOf(
   if (!res.ok) throw new Error(`Hub responded with ${res.status}`);
 
   const body = await res.json();
-  if (!body.data) throw new Error('Hub returned no data');
   if (body.errors)
     throw new Error(body.errors[0]?.message || 'Hub returned GraphQL errors');
+  if (!body.data) throw new Error('Hub returned no data');
 
   return (body.data.aliases?.length ?? 0) > 0;
 }

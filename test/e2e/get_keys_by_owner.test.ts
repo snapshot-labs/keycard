@@ -17,7 +17,7 @@ const GetKeysSchema = {
 
 const OWNER = '0x220bc93D88C0aF11f1159eA89a885d5ADd3A7Cf6';
 
-const registered = new Set<string>();
+const registered = new Map<string, number>();
 let hubMode: 'ok' | 'graphql-error' | 'http-error' = 'ok';
 let hub: http.Server;
 
@@ -33,8 +33,12 @@ async function signedParams(
   return { ...message, sig };
 }
 
-function registerAlias(address: string, alias: string) {
-  registered.add(`${address}:${alias}`.toLowerCase());
+function registerAlias(
+  address: string,
+  alias: string,
+  created = Math.floor(Date.now() / 1e3)
+) {
+  registered.set(`${address}:${alias}`.toLowerCase(), created);
 }
 
 describe('POST / { method: get_keys_by_owner }', () => {
@@ -56,10 +60,12 @@ describe('POST / { method: get_keys_by_owner }', () => {
             );
           }
 
-          const { address, alias } = JSON.parse(body).variables;
-          const aliases = registered.has(`${address}:${alias}`.toLowerCase())
-            ? [{ address, alias }]
-            : [];
+          const { address, alias, created_gt } = JSON.parse(body).variables;
+          const created = registered.get(`${address}:${alias}`.toLowerCase());
+          const aliases =
+            created !== undefined && created > created_gt
+              ? [{ address, alias }]
+              : [];
           res.end(JSON.stringify({ data: { aliases } }));
         });
       })
@@ -113,6 +119,57 @@ describe('POST / { method: get_keys_by_owner }', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.result.keys).toEqual([]);
+    });
+  });
+
+  describe('when the alias is registered but expired', () => {
+    it('returns a 401 error', async () => {
+      const wallet = Wallet.createRandom();
+      const created = Math.floor(Date.now() / 1e3) - 91 * 24 * 60 * 60;
+      registerAlias(OWNER, wallet.address, created);
+
+      const response = await request(HOST)
+        .post('/')
+        .send({
+          method: 'get_keys_by_owner',
+          params: await signedParams(wallet, OWNER)
+        });
+
+      expect(response.status).toBe(401);
+      expect(response.body.error.data).toContain('Alias not authorized');
+    });
+  });
+
+  describe('when the timestamp is not a number', () => {
+    it('returns a 400 error', async () => {
+      const wallet = Wallet.createRandom();
+      registerAlias(OWNER, wallet.address);
+
+      const response = await request(HOST)
+        .post('/')
+        .send({
+          method: 'get_keys_by_owner',
+          params: {
+            from: OWNER,
+            alias: wallet.address,
+            timestamp: 'now',
+            sig: '0x00'
+          }
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error.data).toContain('Invalid timestamp');
+    });
+  });
+
+  describe('when params is null', () => {
+    it('returns a 400 error', async () => {
+      const response = await request(HOST)
+        .post('/')
+        .send({ method: 'get_keys_by_owner', params: null });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error.data).toContain('Invalid address');
     });
   });
 
