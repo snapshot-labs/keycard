@@ -1,12 +1,18 @@
 import { capture } from '@snapshot-labs/snapshot-sentry';
 import express from 'express';
-import { authChecker } from './helpers/auth';
-import { rpcError, rpcSuccess } from './helpers/utils';
-import { generateKey, getKeys, logReq, whitelistAddress } from './methods';
 import {
   name as packageName,
   version as packageVersion
 } from '../package.json';
+import { authChecker } from './helpers/auth';
+import { rpcError, rpcSuccess } from './helpers/utils';
+import {
+  generateKey,
+  getKeys,
+  getKeysByOwner,
+  logReq,
+  whitelistAddress
+} from './methods';
 
 const router = express.Router();
 
@@ -28,6 +34,8 @@ router.post('/', authChecker, async (req, res) => {
     let result: any = {};
     if (method === 'log_req') result = await logReq(params.key, params.app);
     else if (method === 'get_keys') result = await getKeys(params.app);
+    else if (method === 'get_keys_by_owner')
+      result = await getKeysByOwner(params);
     else if (method === 'generate_key') result = await generateKey(params);
     else if (method === 'whitelist') result = await whitelistAddress(params);
     else return rpcError(res, 400, 'invalid method', id);

@@ -3,11 +3,14 @@ import { getAddress } from '@ethersproject/address';
 import { verifyMessage } from '@ethersproject/wallet';
 import { capture } from '@snapshot-labs/snapshot-sentry';
 import { limits } from './config.json';
+import { isAliasOf } from './helpers/aliases';
+import { recoverGetKeysSigner } from './helpers/eip712';
 import db from './helpers/mysql';
 import { sha256 } from './utils';
 import { createNewKey, updateKey, updateTotal } from './writer';
 
 const apps = Object.keys(limits);
+const SIGNATURE_WINDOW = 300; // 5 minutes before or after the server time
 
 type Key = {
   key: string;
@@ -17,6 +20,13 @@ type Key = {
   updated: string;
   active: number;
   month_total: number;
+};
+
+type GetKeysByOwnerParams = {
+  from: string;
+  alias: string;
+  timestamp: number;
+  sig: string;
 };
 
 const getKey = async (key: string, app: string): Promise<Key | null> => {
@@ -63,14 +73,14 @@ export const generateKey = async (params: any) => {
     } catch {
       return { error: 'Invalid signature', code: 400 };
     }
-    console.log('Generate key request from', signer, 'with sig', params.sig);
+    console.log('Generate key request from', signer);
     const whitelisted = await isWhitelist(signer);
     if (!whitelisted) return { error: 'Not whitelisted', code: 401 };
     const key = sha256(params.sig + signer);
     await updateKey(key, signer);
     return { key };
   } catch (err) {
-    capture(err, { context: { params } });
+    capture(err);
     return { error: 'Error while generating key', code: 500 };
   }
 };
@@ -118,6 +128,55 @@ export const getKeys = async (app: string) => {
     return result;
   } catch (err) {
     capture(err, { context: { app } });
+    return { error: 'Error while getting keys', code: 500 };
+  }
+};
+
+export const getKeysByOwner = async (params: GetKeysByOwnerParams) => {
+  try {
+    const { from, alias, timestamp, sig } = params ?? {};
+
+    let owner: string;
+    try {
+      owner = getAddress(from);
+    } catch {
+      return { error: 'Invalid address', code: 400 };
+    }
+
+    if (!Number.isFinite(timestamp))
+      return { error: 'Invalid timestamp', code: 400 };
+
+    const ts = Math.floor(Date.now() / 1e3);
+    if (timestamp > ts + SIGNATURE_WINDOW || timestamp < ts - SIGNATURE_WINDOW)
+      return { error: 'Signature expired', code: 401 };
+
+    let signer: string;
+    try {
+      signer = recoverGetKeysSigner({ from, alias, timestamp }, sig);
+    } catch {
+      return { error: 'Invalid signature', code: 400 };
+    }
+
+    if (signer !== getAddress(alias))
+      return { error: 'Invalid signature', code: 400 };
+    if (!(await isAliasOf(owner, signer)))
+      return { error: 'Alias not authorized', code: 401 };
+
+    const rows = await db.queryAsync(
+      `
+        SELECT \`key\`, name, created
+        FROM \`keys\` WHERE owner = ? AND active = 1 AND \`key\` IS NOT NULL`,
+      [owner]
+    );
+    return {
+      keys: rows.map(row => ({
+        key: row.key,
+        name: row.name,
+        created: row.created
+      }))
+    };
+  } catch (err) {
+    capture(err, { context: { from: params?.from, alias: params?.alias } });
     return { error: 'Error while getting keys', code: 500 };
   }
 };
