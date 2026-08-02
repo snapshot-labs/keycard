@@ -22,6 +22,13 @@ type Key = {
   month_total: number;
 };
 
+type GetKeysByOwnerParams = {
+  from: string;
+  alias: string;
+  timestamp: number;
+  sig: string;
+};
+
 const getKey = async (key: string, app: string): Promise<Key | null> => {
   const [keyData] = await db.queryAsync(
     `
@@ -125,7 +132,7 @@ export const getKeys = async (app: string) => {
   }
 };
 
-export const getKeysByOwner = async (params: any) => {
+export const getKeysByOwner = async (params: GetKeysByOwnerParams) => {
   try {
     const { from, alias, timestamp, sig } = params ?? {};
 
