@@ -50,7 +50,7 @@ const getActiveKeys = async (app: string) => {
         LEFT JOIN reqs_monthly m ON m.key = k.key
         AND m.month = DATE_FORMAT(CURRENT_TIMESTAMP, '%m-%Y')
         AND m.app = ?
-      WHERE active = 1 AND k.key IS NOT NULL
+      WHERE active = 1
     `,
     [app]
   );
@@ -192,9 +192,8 @@ export const whitelistAddress = async (params: any) => {
     } catch {
       return { error: 'Invalid address', code: 400 };
     }
-    await createNewKey(address, name);
     const key = sha256(randomUUID() + address);
-    await updateKey(key, address);
+    await createNewKey(address, name, key);
     return { success: true, key };
   } catch (err: any) {
     if (err.code === 'ER_DUP_ENTRY')

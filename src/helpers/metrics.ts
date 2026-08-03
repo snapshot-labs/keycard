@@ -15,17 +15,11 @@ export default function initMetrics(app: Express) {
 }
 
 async function collectSubscriberCounts() {
-  const subscriberCounts = await Promise.all([
-    db.queryAsync(
-      'SELECT count(*) as count FROM `keys` WHERE `key` IS NOT NULL'
-    ),
-    db.queryAsync('SELECT count(*) as count FROM `keys` WHERE `key` IS NULL')
-  ]);
+  const [{ count }] = await db.queryAsync(
+    'SELECT count(*) as count FROM `keys`'
+  );
 
-  return [
-    { status: 'active', count: subscriberCounts[0][0].count },
-    { status: 'pending', count: subscriberCounts[1][0].count }
-  ];
+  return [{ status: 'active', count }];
 }
 
 new client.Gauge({

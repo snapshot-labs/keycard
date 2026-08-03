@@ -30,7 +30,7 @@ describe('POST / { method: whitelist }', () => {
     });
 
     it('creates the new key on the Free tier (0)', async () => {
-      await request(HOST)
+      const response = await request(HOST)
         .post('/')
         .set({ secret: process.env.SECRET })
         .send({
@@ -39,10 +39,11 @@ describe('POST / { method: whitelist }', () => {
         });
 
       const [row] = await db.queryAsync(
-        'SELECT tier FROM `keys` WHERE owner = ?',
+        'SELECT tier, `key` FROM `keys` WHERE owner = ?',
         [ADDRESS]
       );
       expect(row.tier).toBe(0);
+      expect(row.key).toBe(response.body.result.key);
     });
   });
 
@@ -84,10 +85,10 @@ describe('POST / { method: whitelist }', () => {
 
   describe('when the address is already whitelisted', () => {
     it('returns a 409 error', async () => {
-      await db.queryAsync('INSERT INTO `keys` (owner, name) VALUES (?, ?)', [
-        ADDRESS,
-        NAME
-      ]);
+      await db.queryAsync(
+        'INSERT INTO `keys` (owner, name, `key`) VALUES (?, ?, ?)',
+        [ADDRESS, NAME, 'test-whitelist-existing-key']
+      );
 
       const response = await request(HOST)
         .post('/')
