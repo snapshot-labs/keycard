@@ -33,7 +33,7 @@ describe('POST / { method: whitelist }', () => {
     });
 
     it('creates the new key on the Free tier (0)', async () => {
-      await request(HOST)
+      const response = await request(HOST)
         .post('/')
         .set({ secret: process.env.SECRET })
         .send({
@@ -42,10 +42,11 @@ describe('POST / { method: whitelist }', () => {
         });
 
       const [row] = await db
-        .select({ tier: keys.tier })
+        .select({ tier: keys.tier, key: keys.key })
         .from(keys)
         .where(eq(keys.owner, ADDRESS));
       expect(row.tier).toBe(0);
+      expect(row.key).toBe(response.body.result.key);
     });
   });
 
@@ -116,6 +117,34 @@ describe('POST / { method: whitelist }', () => {
 
       expect(response.status).toBe(400);
       expect(response.body.error.data).toContain('Name too long');
+    });
+  });
+
+  describe('when the name contains invalid characters', () => {
+    it('returns a 400 error', async () => {
+      const response = await request(HOST)
+        .post('/')
+        .set({ secret: process.env.SECRET })
+        .send({
+          method: 'whitelist',
+          params: { name: '😀'.repeat(3), address: ADDRESS }
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error.data).toContain('Invalid name');
+    });
+
+    it('accepts names with the characters used in production', async () => {
+      const response = await request(HOST)
+        .post('/')
+        .set({ secret: process.env.SECRET })
+        .send({
+          method: 'whitelist',
+          params: { name: 'Test DAO (key@example.com / v2)', address: ADDRESS }
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.result.success).toBe(true);
     });
   });
 });

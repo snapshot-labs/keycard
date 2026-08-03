@@ -5,11 +5,21 @@ import { capture } from '@snapshot-labs/snapshot-sentry';
 import { and, eq } from 'drizzle-orm';
 import { limits } from './config.json';
 import { db } from './db';
+import { isAliasOf } from './helpers/aliases';
+import { recoverGetKeysSigner } from './helpers/eip712';
 import { currentMonth, keys, reqsMonthly } from './schema';
 import { sha256 } from './utils';
 import { createNewKey, updateKey, updateTotal } from './writer';
 
 const apps = Object.keys(limits);
+const SIGNATURE_WINDOW = 300; // 5 minutes before or after the server time
+
+type GetKeysByOwnerParams = {
+  from: string;
+  alias: string;
+  timestamp: number;
+  sig: string;
+};
 
 const getKey = async (key: string) => {
   const [keyData] = await db
@@ -46,13 +56,13 @@ export const generateKey = async (params: any) => {
     } catch {
       return { error: 'Invalid signature', code: 400 };
     }
-    console.log('Generate key request from', signer, 'with sig', params.sig);
+    console.log('Generate key request from', signer);
     const key = sha256(params.sig + signer);
     const whitelisted = await updateKey(key, signer);
     if (!whitelisted) return { error: 'Not whitelisted', code: 401 };
     return { key };
   } catch (err) {
-    capture(err, { context: { params } });
+    capture(err);
     return { error: 'Error while generating key', code: 500 };
   }
 };
@@ -104,13 +114,62 @@ export const getKeys = async (app: string) => {
   }
 };
 
+export const getKeysByOwner = async (params: GetKeysByOwnerParams) => {
+  try {
+    const { from, alias, timestamp, sig } = params ?? {};
+
+    let owner: string;
+    try {
+      owner = getAddress(from);
+    } catch {
+      return { error: 'Invalid address', code: 400 };
+    }
+
+    if (!Number.isFinite(timestamp))
+      return { error: 'Invalid timestamp', code: 400 };
+
+    const ts = Math.floor(Date.now() / 1e3);
+    if (timestamp > ts + SIGNATURE_WINDOW || timestamp < ts - SIGNATURE_WINDOW)
+      return { error: 'Signature expired', code: 401 };
+
+    let signer: string;
+    try {
+      signer = recoverGetKeysSigner({ from, alias, timestamp }, sig);
+    } catch {
+      return { error: 'Invalid signature', code: 400 };
+    }
+
+    if (signer !== getAddress(alias))
+      return { error: 'Invalid signature', code: 400 };
+    if (!(await isAliasOf(owner, signer)))
+      return { error: 'Alias not authorized', code: 401 };
+
+    const rows = await db
+      .select({ key: keys.key, name: keys.name, created: keys.created })
+      .from(keys)
+      .where(and(eq(keys.owner, owner), eq(keys.active, true)));
+    return {
+      keys: rows.map(row => ({
+        key: row.key,
+        name: row.name,
+        // Legacy MySQL epoch-second shape preserved for API consumers
+        created: Math.floor(row.created.getTime() / 1e3)
+      }))
+    };
+  } catch (err) {
+    capture(err, { context: { from: params?.from, alias: params?.alias } });
+    return { error: 'Error while getting keys', code: 500 };
+  }
+};
+
 export const whitelistAddress = async (params: any) => {
   try {
     const { name } = params;
     let { address } = params;
     if (!name) return { error: 'Missing name', code: 400 };
-    if (typeof name !== 'string' || name.length > 32)
-      return { error: 'Name too long', code: 400 };
+    if (typeof name !== 'string' || !/^[a-zA-Z0-9 @()./_-]+$/.test(name))
+      return { error: 'Invalid name', code: 400 };
+    if (name.length > 32) return { error: 'Name too long', code: 400 };
     if (!address) return { error: 'Missing address', code: 400 };
     try {
       address = getAddress(address);

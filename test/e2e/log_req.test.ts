@@ -101,5 +101,30 @@ describe('POST / { method: log_req }', () => {
       expect(after.total).toBeGreaterThan(before.total);
       expect(after.monthlyTotal).toBeGreaterThan(before.monthlyTotal);
     });
+
+    it('rejects a key that differs only in casing', async () => {
+      await db.insert(keys).values({ owner: ADDRESS, name: NAME, key: KEY });
+
+      const response = await request(HOST)
+        .post('/')
+        .set({ secret: process.env.SECRET })
+        .send({
+          method: 'log_req',
+          params: { app: apps[0], key: KEY.toUpperCase() }
+        });
+
+      await new Promise(r => setTimeout(r, 1000));
+
+      const rows = await db
+        .select({ key: reqs.key })
+        .from(reqs)
+        .where(eq(reqs.key, KEY));
+
+      // Keys are opaque case-sensitive credentials on PostgreSQL (text):
+      // a differently-cased key is a different key and must not log usage.
+      expect(response.status).toBe(401);
+      expect(response.body.error.data).toContain('Key does not exist');
+      expect(rows).toHaveLength(0);
+    });
   });
 });
