@@ -19,9 +19,11 @@ type GetKeysByOwnerParams = {
   sig: string;
 };
 
-const getKey = async (key: string) => {
+const getKey = async (
+  key: string
+): Promise<{ key: string; active: number } | undefined> => {
   const [keyData] = await db.queryAsync(
-    'SELECT k.active FROM `keys` k WHERE k.key = ?',
+    'SELECT k.key, k.active FROM `keys` k WHERE k.key = ?',
     [key]
   );
   return keyData;
@@ -80,7 +82,7 @@ export const logReq = async (key: string, app: string) => {
     if (!keyData.active) return { error: 'Key is not active', code: 401 };
 
     // Increase the total count for this key, but don't wait for it to finish.
-    updateTotal(key, app).catch(err => {
+    updateTotal(keyData.key, app).catch(err => {
       capture(err, { key, app });
     });
     return { success: true };
@@ -171,8 +173,9 @@ export const whitelistAddress = async (params: any) => {
     const { name } = params;
     let { address } = params;
     if (!name) return { error: 'Missing name', code: 400 };
-    if (typeof name !== 'string' || name.length > 32)
-      return { error: 'Name too long', code: 400 };
+    if (typeof name !== 'string' || !/^[a-zA-Z0-9 @()./_-]+$/.test(name))
+      return { error: 'Invalid name', code: 400 };
+    if (name.length > 32) return { error: 'Name too long', code: 400 };
     if (!address) return { error: 'Missing address', code: 400 };
     try {
       address = getAddress(address);

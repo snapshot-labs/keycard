@@ -117,4 +117,32 @@ describe('POST / { method: whitelist }', () => {
       expect(response.body.error.data).toContain('Name too long');
     });
   });
+
+  describe('when the name contains invalid characters', () => {
+    it('returns a 400 error', async () => {
+      const response = await request(HOST)
+        .post('/')
+        .set({ secret: process.env.SECRET })
+        .send({
+          method: 'whitelist',
+          params: { name: '😀'.repeat(3), address: ADDRESS }
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error.data).toContain('Invalid name');
+    });
+
+    it('accepts names with the characters used in production', async () => {
+      const response = await request(HOST)
+        .post('/')
+        .set({ secret: process.env.SECRET })
+        .send({
+          method: 'whitelist',
+          params: { name: 'Test DAO (key@example.com / v2)', address: ADDRESS }
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.result.success).toBe(true);
+    });
+  });
 });
