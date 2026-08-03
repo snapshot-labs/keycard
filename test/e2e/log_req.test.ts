@@ -123,5 +123,30 @@ describe('POST / { method: log_req }', () => {
       expect(afterDailyTotal).toBeGreaterThan(beforeDailyTotal);
       expect(afterMonthlyTotal).toBeGreaterThan(beforeMonthlyTotal);
     });
+
+    it('logs usage under the stored key when the caller uses different casing', async () => {
+      await db.queryAsync(
+        'INSERT INTO `keys` (owner, name, `key`) VALUES (?, ?, ?)',
+        [ADDRESS, NAME, KEY]
+      );
+
+      const response = await request(HOST)
+        .post('/')
+        .set({ secret: process.env.SECRET })
+        .send({
+          method: 'log_req',
+          params: { app: apps[0], key: KEY.toUpperCase() }
+        });
+
+      await new Promise(r => setTimeout(r, 1000));
+
+      const [row] = await db.queryAsync(
+        'SELECT `key` from reqs WHERE `key` = ?',
+        KEY
+      );
+
+      expect(response.status).toBe(200);
+      expect(row.key).toBe(KEY);
+    });
   });
 });
