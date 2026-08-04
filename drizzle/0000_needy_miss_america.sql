@@ -17,6 +17,14 @@ CREATE TABLE "reqs" (
 	CONSTRAINT "reqs_key_app_pk" PRIMARY KEY("key","app")
 );
 --> statement-breakpoint
+CREATE TABLE "reqs_daily" (
+	"key" text NOT NULL,
+	"app" text NOT NULL,
+	"day" text NOT NULL,
+	"total" integer DEFAULT 0 NOT NULL,
+	CONSTRAINT "reqs_daily_key_day_app_pk" PRIMARY KEY("key","day","app")
+);
+--> statement-breakpoint
 CREATE TABLE "reqs_monthly" (
 	"key" text NOT NULL,
 	"app" text NOT NULL,

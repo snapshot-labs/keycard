@@ -126,6 +126,53 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.reqs_daily": {
+      "name": "reqs_daily",
+      "schema": "",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "app": {
+          "name": "app",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "day": {
+          "name": "day",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total": {
+          "name": "total",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "reqs_daily_key_day_app_pk": {
+          "name": "reqs_daily_key_day_app_pk",
+          "columns": [
+            "key",
+            "day",
+            "app"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.reqs_monthly": {
       "name": "reqs_monthly",
       "schema": "",

@@ -1,6 +1,13 @@
 import { eq, sql } from 'drizzle-orm';
 import { db } from './db';
-import { currentMonth, keys, reqs, reqsMonthly } from './schema';
+import {
+  currentDay,
+  currentMonth,
+  keys,
+  reqs,
+  reqsDaily,
+  reqsMonthly
+} from './schema';
 
 export const updateTotal = async (key: string, app: string) => {
   // Independent approximate counters; no cross-row atomicity needed, so no
@@ -14,6 +21,13 @@ export const updateTotal = async (key: string, app: string) => {
     .onConflictDoUpdate({
       target: [reqs.key, reqs.app],
       set: { total: sql`${reqs.total} + 1`, last_active: sql`now()` }
+    });
+  await db
+    .insert(reqsDaily)
+    .values({ key, app, day: currentDay, total: 1 })
+    .onConflictDoUpdate({
+      target: [reqsDaily.key, reqsDaily.day, reqsDaily.app],
+      set: { total: sql`${reqsDaily.total} + 1` }
     });
   await db
     .insert(reqsMonthly)

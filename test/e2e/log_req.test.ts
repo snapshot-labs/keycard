@@ -2,7 +2,14 @@ import { and, eq } from 'drizzle-orm';
 import request from 'supertest';
 import { limits } from '../../src/config.json';
 import { closeDatabase, db } from '../../src/db';
-import { currentMonth, keys, reqs, reqsMonthly } from '../../src/schema';
+import {
+  currentDay,
+  currentMonth,
+  keys,
+  reqs,
+  reqsDaily,
+  reqsMonthly
+} from '../../src/schema';
 import { updateTotal } from '../../src/writer';
 import { cleanupDb, HOST } from '../utils';
 
@@ -17,12 +24,16 @@ async function getTotals(key: string) {
     .select({ total: reqs.total, last_active: reqs.last_active })
     .from(reqs)
     .where(eq(reqs.key, key));
+  const [{ total: dailyTotal }] = await db
+    .select({ total: reqsDaily.total })
+    .from(reqsDaily)
+    .where(and(eq(reqsDaily.day, currentDay), eq(reqsDaily.key, key)));
   const [{ total: monthlyTotal }] = await db
     .select({ total: reqsMonthly.total })
     .from(reqsMonthly)
     .where(and(eq(reqsMonthly.month, currentMonth), eq(reqsMonthly.key, key)));
 
-  return { total, last_active, monthlyTotal };
+  return { total, last_active, dailyTotal, monthlyTotal };
 }
 
 describe('POST / { method: log_req }', () => {
@@ -99,6 +110,7 @@ describe('POST / { method: log_req }', () => {
         before.last_active.getTime()
       );
       expect(after.total).toBeGreaterThan(before.total);
+      expect(after.dailyTotal).toBeGreaterThan(before.dailyTotal);
       expect(after.monthlyTotal).toBeGreaterThan(before.monthlyTotal);
     });
 

@@ -17,8 +17,9 @@ import {
 // case-insensitively; citext preserves that so mixed-case rows still auth.
 const citext = customType<{ data: string }>({ dataType: () => 'citext' });
 
-// Legacy MySQL DATE_FORMAT pattern (%m-%Y) preserved for data continuity
+// Legacy MySQL DATE_FORMAT patterns (%m-%Y, %d-%m-%Y) preserved for data continuity
 export const currentMonth = sql`to_char(current_timestamp AT TIME ZONE 'UTC', 'MM-YYYY')`;
+export const currentDay = sql`to_char(current_timestamp AT TIME ZONE 'UTC', 'DD-MM-YYYY')`;
 
 export const keys = pgTable(
   'keys',
@@ -46,6 +47,19 @@ export const reqs = pgTable(
     last_active: timestamp({ withTimezone: true }).notNull().defaultNow()
   },
   table => [primaryKey({ columns: [table.key, table.app] })]
+);
+
+// Write-only for now: kept so daily history has no gap when a future
+// feature starts reading it.
+export const reqsDaily = pgTable(
+  'reqs_daily',
+  {
+    key: text().notNull(),
+    app: text().notNull(),
+    day: text().notNull(),
+    total: integer().notNull().default(0)
+  },
+  table => [primaryKey({ columns: [table.key, table.day, table.app] })]
 );
 
 export const reqsMonthly = pgTable(
