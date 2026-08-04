@@ -33,4 +33,5 @@ CREATE TABLE "reqs_monthly" (
 	CONSTRAINT "reqs_monthly_key_month_app_pk" PRIMARY KEY("key","month","app")
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX "keys_key_idx" ON "keys" USING btree ("key");
+CREATE UNIQUE INDEX "keys_key_idx" ON "keys" USING btree ("key");--> statement-breakpoint
+CREATE INDEX "reqs_monthly_month_app_idx" ON "reqs_monthly" USING btree ("month","app");

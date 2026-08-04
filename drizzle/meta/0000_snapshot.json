@@ -203,7 +203,29 @@
           "default": 0
         }
       },
-      "indexes": {},
+      "indexes": {
+        "reqs_monthly_month_app_idx": {
+          "name": "reqs_monthly_month_app_idx",
+          "columns": [
+            {
+              "expression": "month",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "app",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "reqs_monthly_key_month_app_pk": {
