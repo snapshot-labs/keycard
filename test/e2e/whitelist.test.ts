@@ -1,5 +1,7 @@
+import { eq } from 'drizzle-orm';
 import request from 'supertest';
-import db from '../../src/helpers/mysql';
+import { closeDatabase, db } from '../../src/db';
+import { keys } from '../../src/schema';
 import { cleanupDb, HOST } from '../utils';
 
 const NAME = 'test-whitelist-name';
@@ -12,7 +14,7 @@ describe('POST / { method: whitelist }', () => {
 
   afterAll(async () => {
     await cleanupDb(ADDRESS);
-    return db.endAsync();
+    return closeDatabase();
   });
 
   describe('on a valid payload', () => {
@@ -27,6 +29,7 @@ describe('POST / { method: whitelist }', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.result.success).toBe(true);
+      expect(response.body.result.key).toHaveLength(64);
     });
 
     it('creates the new key on the Free tier (0)', async () => {
@@ -38,10 +41,10 @@ describe('POST / { method: whitelist }', () => {
           params: { name: NAME, address: ADDRESS }
         });
 
-      const [row] = await db.queryAsync(
-        'SELECT tier, `key` FROM `keys` WHERE owner = ?',
-        [ADDRESS]
-      );
+      const [row] = await db
+        .select({ tier: keys.tier, key: keys.key })
+        .from(keys)
+        .where(eq(keys.owner, ADDRESS));
       expect(row.tier).toBe(0);
       expect(row.key).toBe(response.body.result.key);
     });
@@ -85,10 +88,9 @@ describe('POST / { method: whitelist }', () => {
 
   describe('when the address is already whitelisted', () => {
     it('returns a 409 error', async () => {
-      await db.queryAsync(
-        'INSERT INTO `keys` (owner, name, `key`) VALUES (?, ?, ?)',
-        [ADDRESS, NAME, 'test-whitelist-existing-key']
-      );
+      await db
+        .insert(keys)
+        .values({ owner: ADDRESS, name: NAME, key: 'test-whitelist-key' });
 
       const response = await request(HOST)
         .post('/')

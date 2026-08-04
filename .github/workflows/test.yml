@@ -11,4 +11,5 @@ jobs:
     secrets: inherit
     with:
       target: '22'
-      mysql_database_name: keycard_test
+      postgres_database_name: keycard_test
+      postgres_schema_path: ''

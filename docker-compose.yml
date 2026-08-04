@@ -1,20 +1,24 @@
 version: '3.8'
 services:
-  mysql:
-    image: mysql:8.0
-    command: --default-authentication-plugin=mysql_native_password
-    cap_add:
-      - SYS_NICE
+  postgres:
+    image: postgres:18
     ports:
-      - '3305:3306'
+      - '5432:5432'
     environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=keycard
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=keycard
     volumes:
-      - "./src/helpers/schema.sql:/docker-entrypoint-initdb.d/1.sql"
-      - "./src/helpers/seed.sql:/docker-entrypoint-initdb.d/2.sql"
+      - postgres:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U postgres -d keycard']
+      interval: 2s
+      timeout: 3s
+      retries: 15
   keycard-api:
     build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "3007:3007"
     env_file:
@@ -23,5 +27,5 @@ services:
       - .:/app
       - /app/node_modules
 volumes:
-  mysql:
+  postgres:
     driver: local

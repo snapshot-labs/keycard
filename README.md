@@ -18,19 +18,23 @@ Make sure to update limits in `src/config.json`
 
 This API depends on a couple of services:
 
-- Node.js (>= v16.0.0)
-- MySQL (v8.0)
+- Node.js (>= v22.6.0)
+- PostgreSQL (v18 — older versions likely work but are untested)
 
 ### Docker
 
 You can use the docker-compose service to start one up quickly with:
 
 ```sh
-docker compose up 
-# or docker-compose up --build if you want to rebuild the image (will run yarn install and sql from seed.sql)
-# this will start mysql on port 3306
+docker compose up
+# or docker-compose up --build if you want to rebuild the image
+# this will start postgres on port 5432
 # and the api on port 3007
 ```
+
+Database migrations are applied automatically on startup. After each schema change (`src/schema.ts`), run `yarn db:generate` to generate the matching migration.
+
+Optionally seed sample API keys with `yarn db:seed` (idempotent, requires the app to have run once so migrations are applied).
 
 ### Local
 
@@ -170,5 +174,10 @@ yarn test # Will also generate test coverage
 # You can also run only E2E tests with: yarn test:e2e
 ```
 
-E2E tests require a dedicated MySQL test database, named `keycard_test`, with the same schema as defined in `src/helpers/schema.sql`.
+E2E tests require a dedicated PostgreSQL test database, named `keycard_test` (its name must end with `_test`). The app applies its own migrations at startup, so the database only needs to exist:
+
+```bash
+createdb keycard_test
+```
+
 Test configuration are defined in `test/.env.test`

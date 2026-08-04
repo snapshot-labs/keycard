@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { limits } from '../../src/config.json';
-import db from '../../src/helpers/mysql';
+import { closeDatabase, db } from '../../src/db';
+import { keys } from '../../src/schema';
 import { updateTotal } from '../../src/writer';
 import { cleanupDb, HOST } from '../utils';
 
@@ -18,14 +19,41 @@ describe('POST / { method: get_keys }', () => {
 
     afterAll(async () => {
       await cleanupDb(KEY);
-      return db.endAsync();
+      return closeDatabase();
+    });
+
+    it('does not include inactive keys', async () => {
+      await db
+        .insert(keys)
+        .values({ owner: ADDRESS, name: NAME, key: KEY, active: false });
+      await updateTotal(KEY, apps[0]);
+
+      const response = await request(HOST)
+        .post('/')
+        .set({ secret: process.env.SECRET })
+        .send({ method: 'get_keys', params: { app: apps[0] } });
+
+      expect(response.status).toBe(200);
+      expect(response.body.result[apps[0]].key_counts[KEY]).toBeUndefined();
+    });
+
+    it('reports 0 monthly usage for keys without requests', async () => {
+      await db.insert(keys).values({ owner: ADDRESS, name: NAME, key: KEY });
+
+      const response = await request(HOST)
+        .post('/')
+        .set({ secret: process.env.SECRET })
+        .send({ method: 'get_keys', params: { app: apps[0] } });
+
+      expect(response.status).toBe(200);
+      expect(response.body.result[apps[0]].key_counts[KEY]).toMatchObject({
+        tier: 0,
+        month: 0
+      });
     });
 
     it('returns the requests usage of each key', async () => {
-      await db.queryAsync(
-        'INSERT INTO `keys` (owner, name, `key`) VALUES (?, ?, ?)',
-        [ADDRESS, NAME, KEY]
-      );
+      await db.insert(keys).values({ owner: ADDRESS, name: NAME, key: KEY });
       await updateTotal(KEY, apps[0]);
 
       const response = await request(HOST)

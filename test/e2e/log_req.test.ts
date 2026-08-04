@@ -1,6 +1,15 @@
+import { and, eq } from 'drizzle-orm';
 import request from 'supertest';
 import { limits } from '../../src/config.json';
-import db from '../../src/helpers/mysql';
+import { closeDatabase, db } from '../../src/db';
+import {
+  currentDay,
+  currentMonth,
+  keys,
+  reqs,
+  reqsDaily,
+  reqsMonthly
+} from '../../src/schema';
 import { updateTotal } from '../../src/writer';
 import { cleanupDb, HOST } from '../utils';
 
@@ -10,6 +19,23 @@ const KEY = 'test-log-req-key';
 
 const apps = Object.keys(limits);
 
+async function getTotals(key: string) {
+  const [{ total, last_active }] = await db
+    .select({ total: reqs.total, last_active: reqs.last_active })
+    .from(reqs)
+    .where(eq(reqs.key, key));
+  const [{ total: dailyTotal }] = await db
+    .select({ total: reqsDaily.total })
+    .from(reqsDaily)
+    .where(and(eq(reqsDaily.day, currentDay), eq(reqsDaily.key, key)));
+  const [{ total: monthlyTotal }] = await db
+    .select({ total: reqsMonthly.total })
+    .from(reqsMonthly)
+    .where(and(eq(reqsMonthly.month, currentMonth), eq(reqsMonthly.key, key)));
+
+  return { total, last_active, dailyTotal, monthlyTotal };
+}
+
 describe('POST / { method: log_req }', () => {
   beforeEach(async () => {
     await cleanupDb(KEY);
@@ -17,7 +43,7 @@ describe('POST / { method: log_req }', () => {
 
   afterAll(async () => {
     await cleanupDb(KEY);
-    return db.endAsync();
+    return closeDatabase();
   });
 
   describe('when the app does not exists', () => {
@@ -46,10 +72,9 @@ describe('POST / { method: log_req }', () => {
 
   describe('when the key is not active', () => {
     it('returns a 401 error', async () => {
-      await db.queryAsync(
-        'INSERT INTO `keys` (owner, name, active, `key`) VALUES (?, ?, 0, ?)',
-        [ADDRESS, NAME, KEY]
-      );
+      await db
+        .insert(keys)
+        .values({ owner: ADDRESS, name: NAME, active: false, key: KEY });
 
       const response = await request(HOST)
         .post('/')
@@ -63,30 +88,10 @@ describe('POST / { method: log_req }', () => {
 
   describe('when the key is active', () => {
     it('increments the key total usage', async () => {
-      await db.queryAsync(
-        'INSERT INTO `keys` (owner, name, `key`) VALUES (?, ?, ?)',
-        [ADDRESS, NAME, KEY]
-      );
+      await db.insert(keys).values({ owner: ADDRESS, name: NAME, key: KEY });
       await updateTotal(KEY, apps[0]);
 
-      const { total: beforeTotal, last_active: beforeLastActive } = (
-        await db.queryAsync(
-          'SELECT total, last_active from reqs WHERE `key` = ?',
-          KEY
-        )
-      )[0];
-      const { total: beforeDailyTotal } = (
-        await db.queryAsync(
-          "SELECT total from reqs_daily WHERE day = DATE_FORMAT(CURRENT_TIMESTAMP, '%d-%m-%Y') AND `key` = ?",
-          KEY
-        )
-      )[0];
-      const { total: beforeMonthlyTotal } = (
-        await db.queryAsync(
-          "SELECT total from reqs_monthly WHERE month = DATE_FORMAT(CURRENT_TIMESTAMP, '%m-%Y') AND `key` = ?",
-          KEY
-        )
-      )[0];
+      const before = await getTotals(KEY);
 
       await new Promise(r => setTimeout(r, 1000));
 
@@ -97,38 +102,20 @@ describe('POST / { method: log_req }', () => {
 
       await new Promise(r => setTimeout(r, 1000));
 
-      const { total: afterTotal, last_active: afterLastActive } = (
-        await db.queryAsync(
-          'SELECT total, last_active from reqs WHERE `key` = ?',
-          KEY
-        )
-      )[0];
-      const { total: afterDailyTotal } = (
-        await db.queryAsync(
-          "SELECT total from reqs_daily WHERE day = DATE_FORMAT(CURRENT_TIMESTAMP, '%d-%m-%Y') AND `key` = ?",
-          KEY
-        )
-      )[0];
-      const { total: afterMonthlyTotal } = (
-        await db.queryAsync(
-          "SELECT total from reqs_monthly WHERE month = DATE_FORMAT(CURRENT_TIMESTAMP, '%m-%Y') AND `key` = ?",
-          KEY
-        )
-      )[0];
+      const after = await getTotals(KEY);
 
       expect(response.status).toBe(200);
       expect(response.body.result.success).toBe(true);
-      expect(afterLastActive).toBeGreaterThan(beforeLastActive);
-      expect(afterTotal).toBeGreaterThan(beforeTotal);
-      expect(afterDailyTotal).toBeGreaterThan(beforeDailyTotal);
-      expect(afterMonthlyTotal).toBeGreaterThan(beforeMonthlyTotal);
+      expect(after.last_active.getTime()).toBeGreaterThan(
+        before.last_active.getTime()
+      );
+      expect(after.total).toBeGreaterThan(before.total);
+      expect(after.dailyTotal).toBeGreaterThan(before.dailyTotal);
+      expect(after.monthlyTotal).toBeGreaterThan(before.monthlyTotal);
     });
 
-    it('logs usage under the stored key when the caller uses different casing', async () => {
-      await db.queryAsync(
-        'INSERT INTO `keys` (owner, name, `key`) VALUES (?, ?, ?)',
-        [ADDRESS, NAME, KEY]
-      );
+    it('rejects a key that differs only in casing', async () => {
+      await db.insert(keys).values({ owner: ADDRESS, name: NAME, key: KEY });
 
       const response = await request(HOST)
         .post('/')
@@ -140,13 +127,16 @@ describe('POST / { method: log_req }', () => {
 
       await new Promise(r => setTimeout(r, 1000));
 
-      const [row] = await db.queryAsync(
-        'SELECT `key` from reqs WHERE `key` = ?',
-        KEY
-      );
+      const rows = await db
+        .select({ key: reqs.key })
+        .from(reqs)
+        .where(eq(reqs.key, KEY));
 
-      expect(response.status).toBe(200);
-      expect(row.key).toBe(KEY);
+      // Keys are opaque case-sensitive credentials on PostgreSQL (text):
+      // a differently-cased key is a different key and must not log usage.
+      expect(response.status).toBe(401);
+      expect(response.body.error.data).toContain('Key does not exist');
+      expect(rows).toHaveLength(0);
     });
   });
 });
