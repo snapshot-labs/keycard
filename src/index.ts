@@ -1,5 +1,6 @@
 import 'dotenv/config';
-import { fallbackLogger, initLogger } from '@snapshot-labs/snapshot-sentry';
+import './instrument';
+import { fallbackLogger } from '@snapshot-labs/snapshot-sentry';
 import compression from 'compression';
 import cors from 'cors';
 import express from 'express';
@@ -11,7 +12,6 @@ import rpc from './rpc';
 const app = express();
 const PORT = process.env.PORT || 3007;
 
-initLogger();
 const { stop: stopMetrics } = initMetrics(app);
 
 app.disable('x-powered-by');
