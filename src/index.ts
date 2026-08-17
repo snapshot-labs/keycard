@@ -1,8 +1,9 @@
 import 'dotenv/config';
+import './instrument';
 import {
   capture,
   fallbackLogger,
-  initLogger
+  Sentry
 } from '@snapshot-labs/snapshot-sentry';
 import compression from 'compression';
 import cors from 'cors';
@@ -15,7 +16,6 @@ import rpc from './rpc';
 const app = express();
 const PORT = process.env.PORT || 3007;
 
-initLogger();
 const { stop: stopMetrics } = initMetrics(app);
 
 app.disable('x-powered-by');
@@ -36,6 +36,9 @@ async function start() {
   const server = app.listen(PORT, () =>
     console.log(`Listening at http://localhost:${PORT}`)
   );
+  // Bind failures arrive on the error event after listen() returns, so
+  // start().catch alone would miss them.
+  server.on('error', fail);
 
   const gracefulShutdown = (signal: string) => {
     console.log(`Received ${signal}. Starting graceful shutdown...`);
@@ -59,9 +62,11 @@ async function start() {
   process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 }
 
-start().catch(err => {
+function fail(err: unknown) {
   console.error('Failed to start', err);
   capture(err);
-  // Grace period so Sentry's async transport can deliver the event before exit.
-  setTimeout(() => process.exit(1), 2000);
-});
+  // Exit once Sentry has delivered the event, with a 2s upper bound.
+  Sentry.flush(2000).then(() => process.exit(1));
+}
+
+start().catch(fail);
