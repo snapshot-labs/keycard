@@ -5,34 +5,23 @@ import db from './mysql';
 import config from '../config.json';
 
 export default function initMetrics(app: Express) {
-  const { stop } = init(app, {
+  return init(app, {
     whitelistedPath: [/^\/$/],
     errorHandler: (e: any) => capture(e),
     db
   });
-
-  return { stop };
-}
-
-async function collectSubscriberCounts() {
-  const [{ count }] = await db.queryAsync(
-    'SELECT count(*) as count FROM `keys`'
-  );
-
-  return [{ status: 'active', count }];
 }
 
 new client.Gauge({
   name: 'snapshot_subscriber_counts',
-  help: 'Number of Snapshot subscribers by status',
+  help: 'Number of Snapshot subscribers',
   labelNames: ['status'],
   async collect() {
     try {
-      const subscriberCounts = await collectSubscriberCounts();
-
-      subscriberCounts.forEach(({ status, count }) => {
-        this.set({ status }, count);
-      });
+      const [{ count }] = await db.queryAsync(
+        'SELECT count(*) as count FROM `keys`'
+      );
+      this.set({ status: 'active' }, count);
     } catch (err) {
       capture(err);
     }
@@ -44,10 +33,10 @@ new client.Gauge({
   help: 'Total number of API requests',
   async collect() {
     try {
-      this.set(
-        (await db.queryAsync(`SELECT SUM(total) as count FROM reqs`))[0]
-          .count as any
+      const [{ count }] = await db.queryAsync(
+        'SELECT SUM(total) as count FROM reqs'
       );
+      this.set(Number(count) || 0);
     } catch (err) {
       capture(err);
     }
