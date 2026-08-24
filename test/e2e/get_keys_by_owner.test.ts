@@ -3,6 +3,7 @@ import { Wallet } from '@ethersproject/wallet';
 import request from 'supertest';
 import { closeDatabase } from '../../src/db';
 import { whitelistAddress } from '../../src/methods';
+import { updateTotal } from '../../src/writer';
 import { cleanupDb, HOST } from '../utils';
 
 const DOMAIN = { name: 'snapshot', version: '0.1.4' };
@@ -42,6 +43,8 @@ function registerAlias(
 }
 
 describe('POST / { method: get_keys_by_owner }', () => {
+  let seededKey: string | undefined;
+
   beforeAll(done => {
     hub = http
       .createServer((req, res) => {
@@ -78,6 +81,13 @@ describe('POST / { method: get_keys_by_owner }', () => {
     await cleanupDb(OWNER);
   });
 
+  afterEach(async () => {
+    if (seededKey) {
+      await cleanupDb(seededKey);
+      seededKey = undefined;
+    }
+  });
+
   afterAll(async () => {
     await cleanupDb(OWNER);
     hub.close();
@@ -106,6 +116,38 @@ describe('POST / { method: get_keys_by_owner }', () => {
       expect(response.body.result.keys[0].name).toBe('test key');
     });
 
+    it('returns the daily and monthly usage of the keys', async () => {
+      const { key } = await whitelistAddress({
+        name: 'test key',
+        address: OWNER
+      });
+      seededKey = key as string;
+      await updateTotal(seededKey, 'snapshot-hub');
+      await updateTotal(seededKey, 'snapshot-hub');
+      await updateTotal(seededKey, 'score-api');
+      const wallet = Wallet.createRandom();
+      registerAlias(OWNER, wallet.address);
+
+      const response = await request(HOST)
+        .post('/')
+        .send({
+          method: 'get_keys_by_owner',
+          params: await signedParams(wallet, OWNER)
+        });
+
+      expect(response.status).toBe(200);
+      const { daily, monthly } = response.body.result.usage;
+      expect(daily).toHaveLength(2);
+      expect(monthly).toHaveLength(2);
+      const hubDay = daily.find(row => row.app === 'snapshot-hub');
+      expect(hubDay.key).toBe(seededKey);
+      expect(hubDay.total).toBe(2);
+      expect(hubDay.day).toMatch(/^\d{2}-\d{2}-\d{4}$/);
+      const scoreMonth = monthly.find(row => row.app === 'score-api');
+      expect(scoreMonth.total).toBe(1);
+      expect(scoreMonth.month).toMatch(/^\d{2}-\d{4}$/);
+    });
+
     it('returns an empty list when the owner has no keys', async () => {
       const wallet = Wallet.createRandom();
       registerAlias(OWNER, wallet.address);
@@ -119,6 +161,7 @@ describe('POST / { method: get_keys_by_owner }', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.result.keys).toEqual([]);
+      expect(response.body.result.usage).toEqual({ daily: [], monthly: [] });
     });
   });
 
