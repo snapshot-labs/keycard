@@ -8,8 +8,8 @@ import {
 import compression from 'compression';
 import cors from 'cors';
 import express from 'express';
+import { closeDatabase, runMigrations } from './db';
 import initMetrics from './helpers/metrics';
-import { closeDatabase } from './helpers/mysql';
 import { rpcError } from './helpers/utils';
 import rpc from './rpc';
 
@@ -32,6 +32,7 @@ app.use((_, res) => {
 });
 
 async function start() {
+  await runMigrations();
   const server = app.listen(PORT, () =>
     console.log(`Listening at http://localhost:${PORT}`)
   );

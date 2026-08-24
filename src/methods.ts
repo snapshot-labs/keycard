@@ -2,10 +2,12 @@ import { randomUUID } from 'crypto';
 import { getAddress } from '@ethersproject/address';
 import { verifyMessage } from '@ethersproject/wallet';
 import { capture } from '@snapshot-labs/snapshot-sentry';
+import { and, eq } from 'drizzle-orm';
 import { limits } from './config.json';
+import { db } from './db';
 import { isAliasOf } from './helpers/aliases';
 import { recoverGetKeysSigner } from './helpers/eip712';
-import db from './helpers/mysql';
+import { currentMonth, keys, reqsMonthly } from './schema';
 import { sha256 } from './utils';
 import { createNewKey, updateKey, updateTotal } from './writer';
 
@@ -19,37 +21,31 @@ type GetKeysByOwnerParams = {
   sig: string;
 };
 
-const getKey = async (
-  key: string
-): Promise<{ key: string; active: number } | undefined> => {
-  const [keyData] = await db.queryAsync(
-    'SELECT k.key, k.active FROM `keys` k WHERE k.key = ?',
-    [key]
-  );
+const getKey = async (key: string) => {
+  const [keyData] = await db
+    .select({ active: keys.active })
+    .from(keys)
+    .where(eq(keys.key, key));
   return keyData;
 };
 
 const getActiveKeys = async (app: string) => {
-  const keys = await db.queryAsync(
-    `
-      SELECT k.key, k.tier, m.total as month_total
-      FROM \`keys\` k
-        LEFT JOIN reqs_monthly m ON m.key = k.key
-        AND m.month = DATE_FORMAT(CURRENT_TIMESTAMP, '%m-%Y')
-        AND m.app = ?
-      WHERE active = 1
-    `,
-    [app]
-  );
-  return keys;
-};
-
-const isWhitelist = async (address: string) => {
-  const [whitelisted] = await db.queryAsync(
-    'SELECT * FROM `keys` WHERE owner = ?',
-    [address]
-  );
-  return !!whitelisted;
+  return db
+    .select({
+      key: keys.key,
+      tier: keys.tier,
+      month_total: reqsMonthly.total
+    })
+    .from(keys)
+    .leftJoin(
+      reqsMonthly,
+      and(
+        eq(reqsMonthly.key, keys.key),
+        eq(reqsMonthly.month, currentMonth),
+        eq(reqsMonthly.app, app)
+      )
+    )
+    .where(eq(keys.active, true));
 };
 
 export const generateKey = async (params: any) => {
@@ -61,10 +57,9 @@ export const generateKey = async (params: any) => {
       return { error: 'Invalid signature', code: 400 };
     }
     console.log('Generate key request from', signer);
-    const whitelisted = await isWhitelist(signer);
-    if (!whitelisted) return { error: 'Not whitelisted', code: 401 };
     const key = sha256(params.sig + signer);
-    await updateKey(key, signer);
+    const whitelisted = await updateKey(key, signer);
+    if (!whitelisted) return { error: 'Not whitelisted', code: 401 };
     return { key };
   } catch (err) {
     capture(err);
@@ -82,7 +77,7 @@ export const logReq = async (key: string, app: string) => {
     if (!keyData.active) return { error: 'Key is not active', code: 401 };
 
     // Increase the total count for this key, but don't wait for it to finish.
-    updateTotal(keyData.key, app).catch(err => {
+    updateTotal(key, app).catch(err => {
       capture(err, { key, app });
     });
     return { success: true };
@@ -149,17 +144,16 @@ export const getKeysByOwner = async (params: GetKeysByOwnerParams) => {
     if (!(await isAliasOf(owner, signer)))
       return { error: 'Alias not authorized', code: 401 };
 
-    const rows = await db.queryAsync(
-      `
-        SELECT \`key\`, name, created
-        FROM \`keys\` WHERE owner = ? AND active = 1`,
-      [owner]
-    );
+    const rows = await db
+      .select({ key: keys.key, name: keys.name, created: keys.created })
+      .from(keys)
+      .where(and(eq(keys.owner, owner), eq(keys.active, true)));
     return {
       keys: rows.map(row => ({
         key: row.key,
         name: row.name,
-        created: row.created
+        // Legacy MySQL epoch-second shape preserved for API consumers
+        created: Math.floor(row.created.getTime() / 1e3)
       }))
     };
   } catch (err) {
@@ -183,11 +177,10 @@ export const whitelistAddress = async (params: any) => {
       return { error: 'Invalid address', code: 400 };
     }
     const key = sha256(randomUUID() + address);
-    await createNewKey(address, name, key);
+    const created = await createNewKey(address, name, key);
+    if (!created) return { error: 'Address already whitelisted', code: 409 };
     return { success: true, key };
-  } catch (err: any) {
-    if (err.code === 'ER_DUP_ENTRY')
-      return { error: 'Address already whitelisted', code: 409 };
+  } catch (err) {
     capture(err, { context: { params } });
     return { error: 'Error while whitelisting address', code: 500 };
   }

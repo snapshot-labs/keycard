@@ -1,14 +1,16 @@
 import init, { client } from '@snapshot-labs/snapshot-metrics';
 import { capture } from '@snapshot-labs/snapshot-sentry';
+import { avg, eq, max, min, sum } from 'drizzle-orm';
 import { Express } from 'express';
-import db from './mysql';
 import config from '../config.json';
+import { db } from '../db';
+import { currentMonth, keys, reqs, reqsMonthly } from '../schema';
 
 export default function initMetrics(app: Express) {
   return init(app, {
     whitelistedPath: [/^\/$/],
     errorHandler: (e: any) => capture(e),
-    db
+    db: db.$client
   });
 }
 
@@ -18,10 +20,7 @@ new client.Gauge({
   labelNames: ['status'],
   async collect() {
     try {
-      const [{ count }] = await db.queryAsync(
-        'SELECT count(*) as count FROM `keys`'
-      );
-      this.set({ status: 'active' }, count);
+      this.set({ status: 'active' }, await db.$count(keys));
     } catch (err) {
       capture(err);
     }
@@ -33,10 +32,10 @@ new client.Gauge({
   help: 'Total number of API requests',
   async collect() {
     try {
-      const [{ count }] = await db.queryAsync(
-        'SELECT SUM(total) as count FROM reqs'
-      );
-      this.set(Number(count) || 0);
+      const [row] = await db
+        .select({ count: sum(reqs.total).mapWith(Number) })
+        .from(reqs);
+      this.set(row.count ?? 0);
     } catch (err) {
       capture(err);
     }
@@ -60,26 +59,26 @@ new client.Gauge({
   labelNames: ['month', 'year', 'app', 'type'],
   async collect() {
     try {
-      const results = await db.queryAsync(
-        `SELECT
-            SUM(total) as total,
-            MAX(total) as max,
-            MIN(total) as min,
-            AVG(total) as average,
-            DATE_FORMAT(CURRENT_TIMESTAMP, '%m') as periodMonth,
-            DATE_FORMAT(CURRENT_TIMESTAMP, '%Y') as periodYear,
-            app
-            FROM reqs_monthly
-            WHERE month = DATE_FORMAT(CURRENT_TIMESTAMP, '%m-%Y')
-            GROUP BY app`
-      );
+      const results = await db
+        .select({
+          total: sum(reqsMonthly.total).mapWith(Number),
+          max: max(reqsMonthly.total),
+          min: min(reqsMonthly.total),
+          average: avg(reqsMonthly.total).mapWith(Number),
+          app: reqsMonthly.app,
+          month: reqsMonthly.month
+        })
+        .from(reqsMonthly)
+        .where(eq(reqsMonthly.month, currentMonth))
+        .groupBy(reqsMonthly.app, reqsMonthly.month);
 
+      const [periodMonth, periodYear] = (results[0]?.month ?? '').split('-');
       results.forEach(result => {
         ['total', 'min', 'max', 'average'].forEach(type => {
           this.set(
             {
-              month: result.periodMonth,
-              year: result.periodYear,
+              month: periodMonth,
+              year: periodYear,
               app: result.app,
               type
             },

@@ -1,7 +1,7 @@
 import http from 'http';
 import { Wallet } from '@ethersproject/wallet';
 import request from 'supertest';
-import db from '../../src/helpers/mysql';
+import { closeDatabase } from '../../src/db';
 import { whitelistAddress } from '../../src/methods';
 import { cleanupDb, HOST } from '../utils';
 
@@ -81,7 +81,7 @@ describe('POST / { method: get_keys_by_owner }', () => {
   afterAll(async () => {
     await cleanupDb(OWNER);
     hub.close();
-    return db.endAsync();
+    return closeDatabase();
   });
 
   describe('when the alias is registered for the owner', () => {
