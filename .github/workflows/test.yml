@@ -13,3 +13,6 @@ jobs:
       target: '22'
       postgres_database_name: keycard_test
       postgres_schema_path: ''
+      # Shared action provisions postgres with password "postgres"; local
+      # .env.test uses "password" to match docker-compose.
+      dotenv_vars: DATABASE_URL=postgres://postgres:postgres@localhost:5432/keycard_test
