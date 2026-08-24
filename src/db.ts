@@ -1,3 +1,4 @@
+import { capture } from '@snapshot-labs/snapshot-sentry';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import * as schema from './schema';
@@ -19,6 +20,10 @@ export const db = drizzle({
   },
   schema
 });
+
+// Without a listener, an error on an idle pooled client (e.g. a PG failover) is an
+// unhandled EventEmitter 'error' and crashes the process.
+db.$client.on('error', err => capture(err));
 
 // Stable app-wide advisory lock key ('keyc' in ASCII); any fixed int works.
 const MIGRATION_LOCK_ID = 0x6b657963;
