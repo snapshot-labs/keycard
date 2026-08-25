@@ -169,7 +169,8 @@ export const getKeysByOwner = async (params: OwnerSignedParams) => {
       .where(
         and(
           inArray(reqsDaily.key, ownerKeys),
-          sql`to_date(${reqsDaily.day}, 'DD-MM-YYYY') >= current_date - make_interval(days => ${USAGE_DAYS})`
+          sql`to_date(${reqsDaily.day}, 'DD-MM-YYYY')
+            >= current_date - make_interval(days => ${USAGE_DAYS - 1})`
         )
       );
     const monthly = await db
@@ -183,7 +184,8 @@ export const getKeysByOwner = async (params: OwnerSignedParams) => {
       .where(
         and(
           inArray(reqsMonthly.key, ownerKeys),
-          sql`to_date(${reqsMonthly.month}, 'MM-YYYY') >= date_trunc('month', current_date) - make_interval(months => ${USAGE_MONTHS})`
+          sql`to_date(${reqsMonthly.month}, 'MM-YYYY') >= date_trunc('month',
+            current_date) - make_interval(months => ${USAGE_MONTHS - 1})`
         )
       );
 
