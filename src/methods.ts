@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import { getAddress } from '@ethersproject/address';
 import { verifyMessage } from '@ethersproject/wallet';
 import { capture } from '@snapshot-labs/snapshot-sentry';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { limits } from './config.json';
 import { db } from './db';
 import { isAliasOf } from './helpers/aliases';
@@ -13,6 +13,10 @@ import { createNewKey, updateKey, updateTotal } from './writer';
 
 const apps = Object.keys(limits);
 const SIGNATURE_WINDOW = 300; // 5 minutes before or after the server time
+
+// 2x the window the settings page charts, so it can grow without an API change
+const USAGE_DAYS = 60;
+const USAGE_MONTHS = 24;
 
 const verifyOwner = async (
   params: OwnerSignedParams
@@ -162,7 +166,12 @@ export const getKeysByOwner = async (params: OwnerSignedParams) => {
         total: reqsDaily.total
       })
       .from(reqsDaily)
-      .where(inArray(reqsDaily.key, ownerKeys));
+      .where(
+        and(
+          inArray(reqsDaily.key, ownerKeys),
+          sql`to_date(${reqsDaily.day}, 'DD-MM-YYYY') >= current_date - make_interval(days => ${USAGE_DAYS})`
+        )
+      );
     const monthly = await db
       .select({
         key: reqsMonthly.key,
@@ -171,7 +180,12 @@ export const getKeysByOwner = async (params: OwnerSignedParams) => {
         total: reqsMonthly.total
       })
       .from(reqsMonthly)
-      .where(inArray(reqsMonthly.key, ownerKeys));
+      .where(
+        and(
+          inArray(reqsMonthly.key, ownerKeys),
+          sql`to_date(${reqsMonthly.month}, 'MM-YYYY') >= date_trunc('month', current_date) - make_interval(months => ${USAGE_MONTHS})`
+        )
+      );
 
     return {
       keys: rows.map(row => ({

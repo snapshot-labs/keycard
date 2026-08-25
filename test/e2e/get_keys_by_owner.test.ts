@@ -1,8 +1,9 @@
 import http from 'http';
 import { Wallet } from '@ethersproject/wallet';
 import request from 'supertest';
-import { closeDatabase } from '../../src/db';
+import { closeDatabase, db } from '../../src/db';
 import { whitelistAddress } from '../../src/methods';
+import { reqsDaily, reqsMonthly } from '../../src/schema';
 import { updateTotal } from '../../src/writer';
 import { cleanupDb, HOST } from '../utils';
 
@@ -146,6 +147,33 @@ describe('POST / { method: get_keys_by_owner }', () => {
       const scoreMonth = monthly.find(row => row.app === 'score-api');
       expect(scoreMonth.total).toBe(1);
       expect(scoreMonth.month).toMatch(/^\d{2}-\d{4}$/);
+    });
+
+    it('leaves out usage older than the served window', async () => {
+      const { key } = await whitelistAddress({
+        name: 'test key',
+        address: OWNER
+      });
+      seededKey = key as string;
+      await db
+        .insert(reqsDaily)
+        .values({ key: seededKey, app: 'snapshot-hub', day: '01-01-2020' });
+      await db
+        .insert(reqsMonthly)
+        .values({ key: seededKey, app: 'snapshot-hub', month: '01-2020' });
+      const wallet = Wallet.createRandom();
+      registerAlias(OWNER, wallet.address);
+
+      const response = await request(HOST)
+        .post('/')
+        .send({
+          method: 'get_keys_by_owner',
+          params: await signedParams(wallet, OWNER)
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.result.usage.daily).toEqual([]);
+      expect(response.body.result.usage.monthly).toEqual([]);
     });
 
     it('returns an empty list when the owner has no keys', async () => {
