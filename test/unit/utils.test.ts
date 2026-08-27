@@ -8,8 +8,6 @@ describe('nextMonthStart()', () => {
     else process.env.TZ = ORIGINAL_TZ;
   });
 
-  // Instants where the process-local calendar month differs from the UTC one,
-  // plus a year rollover.
   it.each([
     ['UTC', '2026-08-31T17:00:00Z', Date.UTC(2026, 8, 1) / 1e3],
     ['Asia/Singapore', '2026-08-31T17:00:00Z', Date.UTC(2026, 8, 1) / 1e3],
