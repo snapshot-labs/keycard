@@ -39,12 +39,33 @@ export const updateTotal = async (key: string, app: string) => {
 };
 
 export const updateKey = async (key: string, owner: string) => {
-  const updated = await db
-    .update(keys)
-    .set({ key })
-    .where(eq(keys.owner, owner))
-    .returning({ owner: keys.owner });
-  return updated.length > 0;
+  return db.transaction(async tx => {
+    // The counter tables are keyed by the key value, so rotating it must move
+    // them too, or the owner loses its usage history and gets a fresh monthly
+    // quota mid-period. FOR UPDATE serialises concurrent generate_key calls
+    // for the same owner, which would otherwise split counters across keys.
+    const [previous] = await tx
+      .select({ key: keys.key })
+      .from(keys)
+      .where(eq(keys.owner, owner))
+      .for('update');
+    if (!previous) return false;
+    if (previous.key === key) return true;
+
+    // Plain UPDATEs, not merges: the new key is a fresh hash with no counter
+    // rows of its own, so the (key, ...) primary keys cannot collide.
+    await tx.update(keys).set({ key }).where(eq(keys.owner, owner));
+    await tx.update(reqs).set({ key }).where(eq(reqs.key, previous.key));
+    await tx
+      .update(reqsDaily)
+      .set({ key })
+      .where(eq(reqsDaily.key, previous.key));
+    await tx
+      .update(reqsMonthly)
+      .set({ key })
+      .where(eq(reqsMonthly.key, previous.key));
+    return true;
+  });
 };
 
 export const createNewKey = async (
