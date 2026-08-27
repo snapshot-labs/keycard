@@ -8,7 +8,7 @@ import { db } from './db';
 import { isAliasOf } from './helpers/aliases';
 import { recoverGetKeysSigner } from './helpers/eip712';
 import { currentMonth, keys, reqsMonthly } from './schema';
-import { sha256 } from './utils';
+import { nextMonthStart, sha256 } from './utils';
 import { createNewKey, updateKey, updateTotal } from './writer';
 
 const apps = Object.keys(limits);
@@ -92,11 +92,7 @@ export const getKeys = async (app: string) => {
     if (!apps.includes(app)) return { error: 'App is not allowed', code: 401 };
     const activeKeys = await getActiveKeys(app);
     // Reset timestamp is the first day of the next month
-    const reset = Number(
-      (
-        Date.UTC(new Date().getFullYear(), new Date().getMonth() + 1, 1) / 1e3
-      ).toFixed(0)
-    );
+    const reset = nextMonthStart();
     const result = {
       [app]: {
         key_counts: activeKeys.reduce((obj, { key, tier, month_total }) => {
