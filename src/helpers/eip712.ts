@@ -2,15 +2,7 @@ import { verifyTypedData } from '@ethersproject/wallet';
 
 const DOMAIN = { name: 'snapshot', version: '0.1.4' };
 
-export type OwnerSignedParams = {
-  from: string;
-  alias: string;
-  timestamp: number;
-  sig: string;
-};
-
-// The type name is hashed into every signature;
-const OWNER_TYPES = {
+const GET_KEYS_TYPES = {
   GetKeys: [
     { name: 'from', type: 'address' },
     { name: 'alias', type: 'address' },
@@ -18,9 +10,9 @@ const OWNER_TYPES = {
   ]
 };
 
-export function recoverOwnerSigner(
+export function recoverGetKeysSigner(
   message: { from: string; alias: string; timestamp: number },
   sig: string
 ): string {
-  return verifyTypedData(DOMAIN, OWNER_TYPES, message, sig);
+  return verifyTypedData(DOMAIN, GET_KEYS_TYPES, message, sig);
 }

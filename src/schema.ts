@@ -20,6 +20,7 @@ const citext = customType<{ data: string }>({ dataType: () => 'citext' });
 // Legacy MySQL DATE_FORMAT patterns (%m-%Y, %d-%m-%Y) preserved for data continuity
 export const currentMonth = sql`to_char(current_timestamp AT TIME ZONE 'UTC', 'MM-YYYY')`;
 export const currentDay = sql`to_char(current_timestamp AT TIME ZONE 'UTC', 'DD-MM-YYYY')`;
+export const currentDate = sql`(current_timestamp AT TIME ZONE 'UTC')::date`;
 
 export const keys = pgTable(
   'keys',
@@ -49,8 +50,6 @@ export const reqs = pgTable(
   table => [primaryKey({ columns: [table.key, table.app] })]
 );
 
-// Write-only for now: kept so daily history has no gap when a future
-// feature starts reading it.
 export const reqsDaily = pgTable(
   'reqs_daily',
   {

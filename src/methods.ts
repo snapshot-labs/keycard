@@ -6,20 +6,32 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import { limits } from './config.json';
 import { db } from './db';
 import { isAliasOf } from './helpers/aliases';
-import { OwnerSignedParams, recoverOwnerSigner } from './helpers/eip712';
-import { currentMonth, keys, reqsDaily, reqsMonthly } from './schema';
+import { recoverGetKeysSigner } from './helpers/eip712';
+import {
+  currentDate,
+  currentMonth,
+  keys,
+  reqsDaily,
+  reqsMonthly
+} from './schema';
 import { sha256 } from './utils';
 import { createNewKey, updateKey, updateTotal } from './writer';
 
 const apps = Object.keys(limits);
 const SIGNATURE_WINDOW = 300; // 5 minutes before or after the server time
 
-// 2x the window the settings page charts, so it can grow without an API change
-const USAGE_DAYS = 60;
-const USAGE_MONTHS = 24;
+const USAGE_DAYS = 30;
+const USAGE_MONTHS = 12;
+
+type GetKeysByOwnerParams = {
+  from: string;
+  alias: string;
+  timestamp: number;
+  sig: string;
+};
 
 const verifyOwner = async (
-  params: OwnerSignedParams
+  params: GetKeysByOwnerParams
 ): Promise<{ owner: string } | { error: string; code: number }> => {
   const { from, alias, timestamp, sig } = params ?? {};
 
@@ -39,7 +51,7 @@ const verifyOwner = async (
 
   let signer: string;
   try {
-    signer = recoverOwnerSigner({ from, alias, timestamp }, sig);
+    signer = recoverGetKeysSigner({ from, alias, timestamp }, sig);
   } catch {
     return { error: 'Invalid signature', code: 400 };
   }
@@ -145,7 +157,7 @@ export const getKeys = async (app: string) => {
   }
 };
 
-export const getKeysByOwner = async (params: OwnerSignedParams) => {
+export const getKeysByOwner = async (params: GetKeysByOwnerParams) => {
   try {
     const auth = await verifyOwner(params);
     if ('error' in auth) return auth;
@@ -170,7 +182,7 @@ export const getKeysByOwner = async (params: OwnerSignedParams) => {
         and(
           inArray(reqsDaily.key, ownerKeys),
           sql`to_date(${reqsDaily.day}, 'DD-MM-YYYY')
-            >= current_date - make_interval(days => ${USAGE_DAYS - 1})`
+            >= ${currentDate} - make_interval(days => ${USAGE_DAYS - 1})`
         )
       );
     const monthly = await db
@@ -185,7 +197,7 @@ export const getKeysByOwner = async (params: OwnerSignedParams) => {
         and(
           inArray(reqsMonthly.key, ownerKeys),
           sql`to_date(${reqsMonthly.month}, 'MM-YYYY') >= date_trunc('month',
-            current_date) - make_interval(months => ${USAGE_MONTHS - 1})`
+            ${currentDate}) - make_interval(months => ${USAGE_MONTHS - 1})`
         )
       );
 
