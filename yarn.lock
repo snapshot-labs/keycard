@@ -1780,19 +1780,18 @@
   resolved "https://registry.yarnpkg.com/@snapshot-labs/prettier-config/-/prettier-config-0.1.0.tgz#f0eafa4a3aed6a7fabaf88c016659f3343041071"
   integrity sha512-8MYAHuewlAdJs55f94qQtEs/WLFmjgYfuIVb1iJPa9gUZauHEXMzbVpKZfnkQsgpwwcXxq9hzg0S/OeOkgj3+w==
 
-"@snapshot-labs/snapshot-metrics@^2.0.0":
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/@snapshot-labs/snapshot-metrics/-/snapshot-metrics-2.0.0.tgz#7064279cb69037778644a854aaabc089eb0fb831"
-  integrity sha512-lxbHwDNCCuaWeh537c1anpPlurEEbxIkCEy3wOVJbNhmIZ0PjOuQYrguQ22J3be0Jjr5uJm5VuXkKH3Pj30HRg==
+"@snapshot-labs/snapshot-metrics@^2.0.1":
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/@snapshot-labs/snapshot-metrics/-/snapshot-metrics-2.0.1.tgz#872836db301dd8aa57fd8f6fd0d58cf535c167f4"
+  integrity sha512-e41FQYirp7x9oGZ6LrgsK5cYQhMouCnjI00msmck1jenuy/mZdaLqMEMm10NrLFMh82SYhSmRpyIkct2EvAVMg==
   dependencies:
     express-prom-bundle "^6.6.0"
-    node-fetch "^2.7.0"
     prom-client "^14.2.0"
 
-"@snapshot-labs/snapshot-sentry@^3.1.0":
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/@snapshot-labs/snapshot-sentry/-/snapshot-sentry-3.1.0.tgz#9e9c306ea6e32025d6c902fbe45e7e882dbde2a3"
-  integrity sha512-MIIQyW0GZisXa93JvDWFdMO0Ycu9JXBH0P3ca0qJ7HhbxfNrzqLOr1dzhKdhXT0e+sTWO7UCxdeQTGF3dV0l7w==
+"@snapshot-labs/snapshot-sentry@^4.0.0":
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/@snapshot-labs/snapshot-sentry/-/snapshot-sentry-4.0.0.tgz#754103b76802add0d7972e1a9ec1ea15686bf32e"
+  integrity sha512-g9yAJQj+55Iu42yVl+dOtOg1e0K9KoFAxV0o8FQL2X2x3N2+FpyUKmrMBzdwhlDW12iyQ4CqpvCx25l6l1fmpg==
   dependencies:
     "@sentry/node" "^10.52.0"
 
@@ -4757,13 +4756,6 @@ negotiator@~0.6.4:
   resolved "https://registry.yarnpkg.com/negotiator/-/negotiator-0.6.4.tgz#777948e2452651c570b712dd01c23e262713fff7"
   integrity sha512-myRT3DiWPHqho5PrJaIRyaMv2kgYf0mUVgBNOYMuCH5Ki1yEiQaf/ZJuQ62nvpc44wL5WDbTX7yGJi1Neevw8w==
 
-node-fetch@^2.7.0:
-  version "2.7.0"
-  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.7.0.tgz#d0f0fa6e3e2dc1d27efcd8ad99d550bda94d187d"
-  integrity sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==
-  dependencies:
-    whatwg-url "^5.0.0"
-
 node-int64@^0.4.0:
   version "0.4.0"
   resolved "https://registry.yarnpkg.com/node-int64/-/node-int64-0.4.0.tgz#87a9065cdb355d3182d8f94ce11188b825c68a3b"
@@ -5672,11 +5664,6 @@ touch@^3.1.0:
   dependencies:
     nopt "~1.0.10"
 
-tr46@~0.0.3:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/tr46/-/tr46-0.0.3.tgz#8184fd347dac9cdc185992f3a6622e14b9d9ab6a"
-  integrity sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==
-
 ts-api-utils@^2.5.0:
   version "2.5.0"
   resolved "https://registry.yarnpkg.com/ts-api-utils/-/ts-api-utils-2.5.0.tgz#4acd4a155e22734990a5ed1fe9e97f113bcb37c1"
@@ -5885,19 +5872,6 @@ walker@^1.0.8:
   integrity sha512-ts/8E8l5b7kY0vlWLewOkDXMmPdLcVV4GmOQLyxuSswIJsweeFZtAsMF7k1Nszz+TYBQrlYRmzOnr398y1JemQ==
   dependencies:
     makeerror "1.0.12"
-
-webidl-conversions@^3.0.0:
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/webidl-conversions/-/webidl-conversions-3.0.1.tgz#24534275e2a7bc6be7bc86611cc16ae0a5654871"
-  integrity sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==
-
-whatwg-url@^5.0.0:
-  version "5.0.0"
-  resolved "https://registry.yarnpkg.com/whatwg-url/-/whatwg-url-5.0.0.tgz#966454e8765462e37644d3626f6742ce8b70965d"
-  integrity sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==
-  dependencies:
-    tr46 "~0.0.3"
-    webidl-conversions "^3.0.0"
 
 which@^2.0.1:
   version "2.0.2"
