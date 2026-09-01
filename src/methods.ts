@@ -2,23 +2,66 @@ import { randomUUID } from 'crypto';
 import { getAddress } from '@ethersproject/address';
 import { verifyMessage } from '@ethersproject/wallet';
 import { capture } from '@snapshot-labs/snapshot-sentry';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { limits } from './config.json';
 import { db } from './db';
 import { isAliasOf } from './helpers/aliases';
 import { recoverGetKeysSigner } from './helpers/eip712';
-import { currentMonth, keys, reqsMonthly } from './schema';
+import {
+  currentDate,
+  currentMonth,
+  keys,
+  reqsDaily,
+  reqsMonthly
+} from './schema';
 import { nextMonthStart, sha256 } from './utils';
 import { createNewKey, updateKey, updateTotal } from './writer';
 
 const apps = Object.keys(limits);
 const SIGNATURE_WINDOW = 300; // 5 minutes before or after the server time
 
+const USAGE_DAYS = 30;
+const USAGE_MONTHS = 12;
+
 type GetKeysByOwnerParams = {
   from: string;
   alias: string;
   timestamp: number;
   sig: string;
+};
+
+const verifyOwner = async (
+  params: GetKeysByOwnerParams
+): Promise<{ owner: string } | { error: string; code: number }> => {
+  const { from, alias, timestamp, sig } = params ?? {};
+
+  let owner: string;
+  try {
+    owner = getAddress(from);
+  } catch {
+    return { error: 'Invalid address', code: 400 };
+  }
+
+  if (!Number.isFinite(timestamp))
+    return { error: 'Invalid timestamp', code: 400 };
+
+  const ts = Math.floor(Date.now() / 1e3);
+  if (timestamp > ts + SIGNATURE_WINDOW || timestamp < ts - SIGNATURE_WINDOW)
+    return { error: 'Signature expired', code: 401 };
+
+  let signer: string;
+  try {
+    signer = recoverGetKeysSigner({ from, alias, timestamp }, sig);
+  } catch {
+    return { error: 'Invalid signature', code: 400 };
+  }
+
+  if (signer !== getAddress(alias))
+    return { error: 'Invalid signature', code: 400 };
+  if (!(await isAliasOf(owner, signer)))
+    return { error: 'Alias not authorized', code: 401 };
+
+  return { owner };
 };
 
 const getKey = async (key: string) => {
@@ -112,45 +155,56 @@ export const getKeys = async (app: string) => {
 
 export const getKeysByOwner = async (params: GetKeysByOwnerParams) => {
   try {
-    const { from, alias, timestamp, sig } = params ?? {};
-
-    let owner: string;
-    try {
-      owner = getAddress(from);
-    } catch {
-      return { error: 'Invalid address', code: 400 };
-    }
-
-    if (!Number.isFinite(timestamp))
-      return { error: 'Invalid timestamp', code: 400 };
-
-    const ts = Math.floor(Date.now() / 1e3);
-    if (timestamp > ts + SIGNATURE_WINDOW || timestamp < ts - SIGNATURE_WINDOW)
-      return { error: 'Signature expired', code: 401 };
-
-    let signer: string;
-    try {
-      signer = recoverGetKeysSigner({ from, alias, timestamp }, sig);
-    } catch {
-      return { error: 'Invalid signature', code: 400 };
-    }
-
-    if (signer !== getAddress(alias))
-      return { error: 'Invalid signature', code: 400 };
-    if (!(await isAliasOf(owner, signer)))
-      return { error: 'Alias not authorized', code: 401 };
+    const auth = await verifyOwner(params);
+    if ('error' in auth) return auth;
 
     const rows = await db
       .select({ key: keys.key, name: keys.name, created: keys.created })
       .from(keys)
-      .where(and(eq(keys.owner, owner), eq(keys.active, true)));
+      .where(and(eq(keys.owner, auth.owner), eq(keys.active, true)));
+    if (rows.length === 0)
+      return { keys: [], usage: { daily: [], monthly: [] } };
+
+    const ownerKeys = rows.map(row => row.key);
+    const daily = await db
+      .select({
+        key: reqsDaily.key,
+        app: reqsDaily.app,
+        day: reqsDaily.day,
+        total: reqsDaily.total
+      })
+      .from(reqsDaily)
+      .where(
+        and(
+          inArray(reqsDaily.key, ownerKeys),
+          sql`to_date(${reqsDaily.day}, 'DD-MM-YYYY')
+            >= ${currentDate} - make_interval(days => ${USAGE_DAYS - 1})`
+        )
+      );
+    const monthly = await db
+      .select({
+        key: reqsMonthly.key,
+        app: reqsMonthly.app,
+        month: reqsMonthly.month,
+        total: reqsMonthly.total
+      })
+      .from(reqsMonthly)
+      .where(
+        and(
+          inArray(reqsMonthly.key, ownerKeys),
+          sql`to_date(${reqsMonthly.month}, 'MM-YYYY') >= date_trunc('month',
+            ${currentDate}) - make_interval(months => ${USAGE_MONTHS - 1})`
+        )
+      );
+
     return {
       keys: rows.map(row => ({
         key: row.key,
         name: row.name,
         // Legacy MySQL epoch-second shape preserved for API consumers
         created: Math.floor(row.created.getTime() / 1e3)
-      }))
+      })),
+      usage: { daily, monthly }
     };
   } catch (err) {
     capture(err, { context: { from: params?.from, alias: params?.alias } });
