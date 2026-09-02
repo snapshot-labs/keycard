@@ -11,6 +11,8 @@ COPY yarn.lock ./
 
 RUN yarn install --frozen-lockfile
 
+ENV NODE_ENV=production
+
 COPY . .
 
 EXPOSE 3007

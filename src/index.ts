@@ -25,11 +25,11 @@ app.use(cors({ maxAge: 86400 }));
 app.use(compression());
 app.use('/', rpc);
 
-fallbackLogger(app);
-
 app.use((_, res) => {
   rpcError(res, 404, {}, '');
 });
+
+fallbackLogger(app);
 
 async function start() {
   await runMigrations();
