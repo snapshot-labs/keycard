@@ -45,6 +45,7 @@ function registerAlias(
 
 describe('POST / { method: get_keys_by_owner }', () => {
   let seededKey: string | undefined;
+  let secondKey: string | undefined;
 
   beforeAll(done => {
     hub = http
@@ -86,6 +87,10 @@ describe('POST / { method: get_keys_by_owner }', () => {
     if (seededKey) {
       await cleanupDb(seededKey);
       seededKey = undefined;
+    }
+    if (secondKey) {
+      await cleanupDb(secondKey);
+      secondKey = undefined;
     }
   });
 
@@ -151,7 +156,7 @@ describe('POST / { method: get_keys_by_owner }', () => {
 
     it('returns every key of the owner with its own usage', async () => {
       const second = 'test-owner-second-key';
-      await cleanupDb(second);
+      secondKey = second;
       const { key } = await whitelistAddress({
         name: 'first key',
         address: OWNER
@@ -180,8 +185,6 @@ describe('POST / { method: get_keys_by_owner }', () => {
       const daily = response.body.result.usage.daily;
       expect(daily.find(row => row.key === seededKey).total).toBe(1);
       expect(daily.find(row => row.key === second).total).toBe(2);
-
-      await cleanupDb(second);
     });
 
     it('leaves out usage older than the served window', async () => {
