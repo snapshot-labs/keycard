@@ -8,8 +8,7 @@ import {
   primaryKey,
   smallint,
   text,
-  timestamp,
-  uniqueIndex
+  timestamp
 } from 'drizzle-orm/pg-core';
 
 // Case-insensitive text: owner is an eth address compared against the
@@ -25,8 +24,8 @@ export const currentDate = sql`(current_timestamp AT TIME ZONE 'UTC')::date`;
 export const keys = pgTable(
   'keys',
   {
-    key: text().notNull(),
-    owner: citext().primaryKey(),
+    key: text().primaryKey(),
+    owner: citext().notNull(),
     name: text().notNull(),
     tier: smallint().notNull().default(0),
     created: timestamp({ withTimezone: true }).notNull().defaultNow(),
@@ -36,7 +35,7 @@ export const keys = pgTable(
       .$onUpdate(() => sql`now()`),
     active: boolean().notNull().default(true)
   },
-  table => [uniqueIndex('keys_key_idx').on(table.key)]
+  table => [index('keys_owner_idx').on(table.owner)]
 );
 
 export const reqs = pgTable(

@@ -52,10 +52,8 @@ export const createNewKey = async (
   name: string,
   key: string
 ) => {
-  const inserted = await db
-    .insert(keys)
-    .values({ owner, name, key })
-    .onConflictDoNothing({ target: keys.owner })
-    .returning({ owner: keys.owner });
-  return inserted.length > 0;
+  if (await db.$count(keys, eq(keys.owner, owner))) return false;
+
+  await db.insert(keys).values({ owner, name, key });
+  return true;
 };
