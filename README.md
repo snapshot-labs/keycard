@@ -151,7 +151,7 @@ curl --location 'https://keycard.snapshot.org/' \
 Creates a new Free tier key for the caller and returns it. Authenticated like
 `get_keys_by_owner`, with the type
 `CreateKey { from: address, alias: address, name: string, timestamp: uint64 }`.
-An owner can hold up to 5 active keys, each with a different name.
+An owner can hold up to 10 active keys, each with a different name.
 
 ```sh
 curl --location 'https://keycard.snapshot.org/' \

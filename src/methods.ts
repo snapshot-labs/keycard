@@ -28,7 +28,7 @@ const SIGNATURE_WINDOW = 300; // 5 minutes before or after the server time
 
 const USAGE_DAYS = 30;
 const USAGE_MONTHS = 12;
-const MAX_KEYS_PER_OWNER = 5;
+const MAX_KEYS_PER_OWNER = 10;
 
 type GetKeysByOwnerParams = {
   from: string;

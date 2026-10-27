@@ -128,7 +128,7 @@ describe('POST / { method: create_key }', () => {
 
   it('rejects more keys than allowed per owner', async () => {
     const wallet = registeredWallet();
-    for (let i = 0; i < 5; i++) await createKey(wallet, `key ${i}`);
+    for (let i = 0; i < 10; i++) await createKey(wallet, `key ${i}`);
 
     const response = await createKey(wallet, 'one too many');
 
