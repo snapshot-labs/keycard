@@ -2,7 +2,13 @@ import { rpcError } from './utils';
 
 const APPS_SECRET = process.env.SECRET || '';
 
-const PUBLIC_METHODS = ['generate_key', 'get_keys_by_owner'];
+const PUBLIC_METHODS = [
+  'create_key',
+  'delete_key',
+  'generate_key',
+  'get_keys_by_owner',
+  'rename_key'
+];
 
 export const authChecker = async (req, res, next) => {
   const { id = null, method } = req.body;
