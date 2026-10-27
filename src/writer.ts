@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { db } from './db';
 import {
   currentDay,
@@ -56,4 +56,26 @@ export const createNewKey = async (
 
   await db.insert(keys).values({ owner, name, key });
   return true;
+};
+
+export const insertKey = async (owner: string, name: string, key: string) => {
+  const [row] = await db
+    .insert(keys)
+    .values({ owner, name, key })
+    .returning({ created: keys.created });
+  return row.created.getTime();
+};
+
+// Only touches active keys, so a deleted key can't be renamed or deleted again
+export const updateOwnerKey = async (
+  owner: string,
+  key: string,
+  values: { name?: string; active?: boolean }
+) => {
+  const updated = await db
+    .update(keys)
+    .set(values)
+    .where(and(eq(keys.key, key), eq(keys.owner, owner), eq(keys.active, true)))
+    .returning({ key: keys.key });
+  return updated.length > 0;
 };

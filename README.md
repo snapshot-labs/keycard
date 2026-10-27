@@ -146,6 +146,40 @@ curl --location 'https://keycard.snapshot.org/' \
 }'
 ```
 
+### create_key
+
+Creates a new Free tier key for the caller and returns it. Authenticated like
+`get_keys_by_owner`, with the type
+`CreateKey { from: address, alias: address, name: string, timestamp: uint64 }`.
+An owner can hold up to 5 active keys, each with a different name.
+
+```sh
+curl --location 'https://keycard.snapshot.org/' \
+--header 'accept: application/json' \
+--header 'content-type: application/json' \
+--data '{
+    "jsonrpc": "2.0",
+    "method": "create_key",
+    "params": {
+        "from": "<OWNER_ADDRESS>",
+        "alias": "<ALIAS_ADDRESS>",
+        "name": "<NAME>",
+        "timestamp": 1769123456,
+        "sig": "<SIGNATURE>"
+    },
+    "id": "123456789"
+}'
+```
+
+### rename_key and delete_key
+
+Rename or delete one of the caller's active keys, authenticated like
+`create_key`. `rename_key` takes `key` and `name`, signed as
+`RenameKey { from: address, alias: address, key: string, name: string, timestamp: uint64 }`.
+`delete_key` takes `key`, signed as
+`DeleteKey { from: address, alias: address, key: string, timestamp: uint64 }`.
+Deleting deactivates the key, which keeps its usage history, and frees its name.
+
 ### whitelist
 
 This method is used by laser to whitelist new address

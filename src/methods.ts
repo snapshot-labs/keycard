@@ -6,7 +6,7 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import { limits } from './config.json';
 import { db } from './db';
 import { isAliasOf } from './helpers/aliases';
-import { recoverGetKeysSigner } from './helpers/eip712';
+import { recoverSigner, SignedType } from './helpers/eip712';
 import {
   currentDate,
   currentMonth,
@@ -15,13 +15,20 @@ import {
   reqsMonthly
 } from './schema';
 import { nextMonthStart, sha256 } from './utils';
-import { createNewKey, updateKey, updateTotal } from './writer';
+import {
+  createNewKey,
+  insertKey,
+  updateKey,
+  updateOwnerKey,
+  updateTotal
+} from './writer';
 
 const apps = Object.keys(limits);
 const SIGNATURE_WINDOW = 300; // 5 minutes before or after the server time
 
 const USAGE_DAYS = 30;
 const USAGE_MONTHS = 12;
+const MAX_KEYS_PER_OWNER = 5;
 
 type GetKeysByOwnerParams = {
   from: string;
@@ -30,10 +37,23 @@ type GetKeysByOwnerParams = {
   sig: string;
 };
 
+type CreateKeyParams = GetKeysByOwnerParams & { name: string };
+type DeleteKeyParams = GetKeysByOwnerParams & { key: string };
+type RenameKeyParams = DeleteKeyParams & { name: string };
+
+const validateName = (name: unknown) => {
+  if (!name) return 'Missing name';
+  if (typeof name !== 'string' || !/^[a-zA-Z0-9 @()./_-]+$/.test(name))
+    return 'Invalid name';
+  if (name.length > 32) return 'Name too long';
+};
+
 const verifyOwner = async (
-  params: GetKeysByOwnerParams
+  params: GetKeysByOwnerParams,
+  type: SignedType = 'GetKeys'
 ): Promise<{ owner: string } | { error: string; code: number }> => {
-  const { from, alias, timestamp, sig } = params ?? {};
+  const { sig, ...message } = params ?? {};
+  const { from, alias, timestamp } = message;
 
   let owner: string;
   try {
@@ -51,7 +71,7 @@ const verifyOwner = async (
 
   let signer: string;
   try {
-    signer = recoverGetKeysSigner({ from, alias, timestamp }, sig);
+    signer = recoverSigner(type, message, sig);
   } catch {
     return { error: 'Invalid signature', code: 400 };
   }
@@ -63,6 +83,12 @@ const verifyOwner = async (
 
   return { owner };
 };
+
+const getOwnerKeys = (owner: string) =>
+  db
+    .select({ key: keys.key, name: keys.name })
+    .from(keys)
+    .where(and(eq(keys.owner, owner), eq(keys.active, true)));
 
 const getKey = async (key: string) => {
   const [keyData] = await db
@@ -216,10 +242,8 @@ export const whitelistAddress = async (params: any) => {
   try {
     const { name } = params;
     let { address } = params;
-    if (!name) return { error: 'Missing name', code: 400 };
-    if (typeof name !== 'string' || !/^[a-zA-Z0-9 @()./_-]+$/.test(name))
-      return { error: 'Invalid name', code: 400 };
-    if (name.length > 32) return { error: 'Name too long', code: 400 };
+    const nameError = validateName(name);
+    if (nameError) return { error: nameError, code: 400 };
     if (!address) return { error: 'Missing address', code: 400 };
     try {
       address = getAddress(address);
@@ -233,5 +257,66 @@ export const whitelistAddress = async (params: any) => {
   } catch (err) {
     capture(err, { context: { params } });
     return { error: 'Error while whitelisting address', code: 500 };
+  }
+};
+
+export const createKey = async (params: CreateKeyParams) => {
+  try {
+    const nameError = validateName(params?.name);
+    if (nameError) return { error: nameError, code: 400 };
+
+    const auth = await verifyOwner(params, 'CreateKey');
+    if ('error' in auth) return auth;
+
+    const ownerKeys = await getOwnerKeys(auth.owner);
+    // Also rejects a replayed signature, as it carries the same name
+    if (ownerKeys.some(row => row.name === params.name))
+      return { error: 'Name already used', code: 409 };
+    if (ownerKeys.length >= MAX_KEYS_PER_OWNER)
+      return { error: 'Too many keys', code: 403 };
+
+    const key = sha256(randomUUID() + auth.owner);
+    const created = await insertKey(auth.owner, params.name, key);
+    return { key, name: params.name, created: Math.floor(created / 1e3) };
+  } catch (err) {
+    capture(err, { context: { from: params?.from, alias: params?.alias } });
+    return { error: 'Error while creating key', code: 500 };
+  }
+};
+
+export const renameKey = async (params: RenameKeyParams) => {
+  try {
+    const nameError = validateName(params?.name);
+    if (nameError) return { error: nameError, code: 400 };
+
+    const auth = await verifyOwner(params, 'RenameKey');
+    if ('error' in auth) return auth;
+
+    const ownerKeys = await getOwnerKeys(auth.owner);
+    if (
+      ownerKeys.some(row => row.name === params.name && row.key !== params.key)
+    )
+      return { error: 'Name already used', code: 409 };
+
+    if (!(await updateOwnerKey(auth.owner, params.key, { name: params.name })))
+      return { error: 'Key not found', code: 404 };
+    return { success: true };
+  } catch (err) {
+    capture(err, { context: { from: params?.from, alias: params?.alias } });
+    return { error: 'Error while renaming key', code: 500 };
+  }
+};
+
+export const deleteKey = async (params: DeleteKeyParams) => {
+  try {
+    const auth = await verifyOwner(params, 'DeleteKey');
+    if ('error' in auth) return auth;
+
+    if (!(await updateOwnerKey(auth.owner, params.key, { active: false })))
+      return { error: 'Key not found', code: 404 };
+    return { success: true };
+  } catch (err) {
+    capture(err, { context: { from: params?.from, alias: params?.alias } });
+    return { error: 'Error while deleting key', code: 500 };
   }
 };

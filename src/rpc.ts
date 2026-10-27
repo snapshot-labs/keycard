@@ -7,10 +7,13 @@ import {
 import { authChecker } from './helpers/auth';
 import { rpcError, rpcSuccess } from './helpers/utils';
 import {
+  createKey,
+  deleteKey,
   generateKey,
   getKeys,
   getKeysByOwner,
   logReq,
+  renameKey,
   whitelistAddress
 } from './methods';
 
@@ -37,6 +40,9 @@ router.post('/', authChecker, async (req, res) => {
     else if (method === 'get_keys_by_owner')
       result = await getKeysByOwner(params);
     else if (method === 'generate_key') result = await generateKey(params);
+    else if (method === 'create_key') result = await createKey(params);
+    else if (method === 'rename_key') result = await renameKey(params);
+    else if (method === 'delete_key') result = await deleteKey(params);
     else if (method === 'whitelist') result = await whitelistAddress(params);
     else return rpcError(res, 400, 'invalid method', id);
 
