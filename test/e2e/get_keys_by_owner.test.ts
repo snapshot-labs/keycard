@@ -4,6 +4,7 @@ import request from 'supertest';
 import { closeDatabase, db } from '../../src/db';
 import { whitelistAddress } from '../../src/methods';
 import { keys, reqsDaily, reqsMonthly } from '../../src/schema';
+import { sha256 } from '../../src/utils';
 import { updateTotal } from '../../src/writer';
 import { cleanupDb, HOST } from '../utils';
 
@@ -17,7 +18,7 @@ const GetKeysSchema = {
   ]
 };
 
-const OWNER = '0x220bc93D88C0aF11f1159eA89a885d5ADd3A7Cf6';
+const OWNER = '0x1F19d5d8bB9bf0778Dc33EE5ABD5aCD88F3a5b63';
 const ADMIN = '0x8C28Cf33d9Fd3D0293f963b1cd27e3FF422B425c';
 
 const registered = new Map<string, number>();
@@ -235,12 +236,15 @@ describe('POST / { method: get_keys_by_owner }', () => {
   });
 
   describe('when the owner is an admin', () => {
-    it('returns the active keys of every owner', async () => {
+    it('returns the active keys of every owner, hashing the others', async () => {
       const { key } = await whitelistAddress({
         name: 'owner key',
         address: OWNER
       });
-      await whitelistAddress({ name: 'admin key', address: ADMIN });
+      const { key: adminKey } = await whitelistAddress({
+        name: 'admin key',
+        address: ADMIN
+      });
       await updateTotal(key as string, 'snapshot-hub');
       const adminWallet = Wallet.createRandom();
       const ownerWallet = Wallet.createRandom();
@@ -261,11 +265,17 @@ describe('POST / { method: get_keys_by_owner }', () => {
         });
 
       expect(adminResponse.status).toBe(200);
-      expect(adminResponse.body.result.keys.map(row => row.owner)).toEqual(
-        expect.arrayContaining([ADMIN, OWNER])
+      expect(adminResponse.body.result.keys).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ key: adminKey, owner: ADMIN }),
+          expect.objectContaining({ key: sha256(key), owner: OWNER })
+        ])
       );
+      expect(JSON.stringify(adminResponse.body)).not.toContain(key);
       expect(adminResponse.body.result.usage.daily).toEqual(
-        expect.arrayContaining([expect.objectContaining({ key, total: 1 })])
+        expect.arrayContaining([
+          expect.objectContaining({ key: sha256(key), total: 1 })
+        ])
       );
       expect(ownerResponse.body.result.keys.map(row => row.owner)).toEqual([
         OWNER
