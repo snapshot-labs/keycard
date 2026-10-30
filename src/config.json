@@ -1,4 +1,5 @@
 {
+  "admins": ["0x8C28Cf33d9Fd3D0293f963b1cd27e3FF422B425c"],
   "limits": {
     "snapshot-hub": {
       "0": {

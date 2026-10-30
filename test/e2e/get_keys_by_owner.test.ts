@@ -18,6 +18,7 @@ const GetKeysSchema = {
 };
 
 const OWNER = '0x220bc93D88C0aF11f1159eA89a885d5ADd3A7Cf6';
+const ADMIN = '0x8C28Cf33d9Fd3D0293f963b1cd27e3FF422B425c';
 
 const registered = new Map<string, number>();
 let hubMode: 'ok' | 'graphql-error' | 'http-error' = 'ok';
@@ -81,6 +82,7 @@ describe('POST / { method: get_keys_by_owner }', () => {
     hubMode = 'ok';
     registered.clear();
     await cleanupDb(OWNER);
+    await cleanupDb(ADMIN);
   });
 
   afterEach(async () => {
@@ -96,6 +98,7 @@ describe('POST / { method: get_keys_by_owner }', () => {
 
   afterAll(async () => {
     await cleanupDb(OWNER);
+    await cleanupDb(ADMIN);
     hub.close();
     return closeDatabase();
   });
@@ -228,6 +231,45 @@ describe('POST / { method: get_keys_by_owner }', () => {
       expect(response.status).toBe(200);
       expect(response.body.result.keys).toEqual([]);
       expect(response.body.result.usage).toEqual({ daily: [], monthly: [] });
+    });
+  });
+
+  describe('when the owner is an admin', () => {
+    it('returns the active keys of every owner', async () => {
+      const { key } = await whitelistAddress({
+        name: 'owner key',
+        address: OWNER
+      });
+      await whitelistAddress({ name: 'admin key', address: ADMIN });
+      await updateTotal(key as string, 'snapshot-hub');
+      const adminWallet = Wallet.createRandom();
+      const ownerWallet = Wallet.createRandom();
+      registerAlias(ADMIN, adminWallet.address);
+      registerAlias(OWNER, ownerWallet.address);
+
+      const adminResponse = await request(HOST)
+        .post('/')
+        .send({
+          method: 'get_keys_by_owner',
+          params: await signedParams(adminWallet, ADMIN)
+        });
+      const ownerResponse = await request(HOST)
+        .post('/')
+        .send({
+          method: 'get_keys_by_owner',
+          params: await signedParams(ownerWallet, OWNER)
+        });
+
+      expect(adminResponse.status).toBe(200);
+      expect(adminResponse.body.result.keys.map(row => row.owner)).toEqual(
+        expect.arrayContaining([ADMIN, OWNER])
+      );
+      expect(adminResponse.body.result.usage.daily).toEqual(
+        expect.arrayContaining([expect.objectContaining({ key, total: 1 })])
+      );
+      expect(ownerResponse.body.result.keys.map(row => row.owner)).toEqual([
+        OWNER
+      ]);
     });
   });
 
