@@ -117,8 +117,10 @@ curl --location 'https://keycard.snapshot.org/' \
 
 ### get_keys_by_owner
 
-Returns the caller's own active keys, including the key values, and their
-daily and monthly usage for the last 30 days and 12 months.
+Returns the caller's own active keys, including the key values and owner, and
+their daily and monthly usage for the last 30 days and 12 months. Addresses
+listed in `admins` in `src/config.json` get every active key and the usage of
+all keys instead, to track it.
 
 Authenticated with an EIP-712 signature from the owner's Snapshot alias, so no
 wallet prompt is needed once an alias is registered:

@@ -3,7 +3,7 @@ import { getAddress } from '@ethersproject/address';
 import { verifyMessage } from '@ethersproject/wallet';
 import { capture } from '@snapshot-labs/snapshot-sentry';
 import { and, eq, inArray, sql } from 'drizzle-orm';
-import { limits } from './config.json';
+import { admins, limits } from './config.json';
 import { db } from './db';
 import { isAliasOf } from './helpers/aliases';
 import { recoverSigner, SignedType } from './helpers/eip712';
@@ -184,10 +184,22 @@ export const getKeysByOwner = async (params: GetKeysByOwnerParams) => {
     const auth = await verifyOwner(params);
     if ('error' in auth) return auth;
 
+    // Admins see every active key and all usage, to track it
+    const isAdmin = admins.includes(auth.owner);
     const rows = await db
-      .select({ key: keys.key, name: keys.name, created: keys.created })
+      .select({
+        key: keys.key,
+        name: keys.name,
+        owner: keys.owner,
+        created: keys.created
+      })
       .from(keys)
-      .where(and(eq(keys.owner, auth.owner), eq(keys.active, true)));
+      .where(
+        and(
+          eq(keys.active, true),
+          isAdmin ? undefined : eq(keys.owner, auth.owner)
+        )
+      );
     if (rows.length === 0)
       return { keys: [], usage: { daily: [], monthly: [] } };
 
@@ -202,7 +214,7 @@ export const getKeysByOwner = async (params: GetKeysByOwnerParams) => {
       .from(reqsDaily)
       .where(
         and(
-          inArray(reqsDaily.key, ownerKeys),
+          isAdmin ? undefined : inArray(reqsDaily.key, ownerKeys),
           sql`to_date(${reqsDaily.day}, 'DD-MM-YYYY')
             >= ${currentDate} - make_interval(days => ${USAGE_DAYS - 1})`
         )
@@ -217,7 +229,7 @@ export const getKeysByOwner = async (params: GetKeysByOwnerParams) => {
       .from(reqsMonthly)
       .where(
         and(
-          inArray(reqsMonthly.key, ownerKeys),
+          isAdmin ? undefined : inArray(reqsMonthly.key, ownerKeys),
           sql`to_date(${reqsMonthly.month}, 'MM-YYYY') >= date_trunc('month',
             ${currentDate}) - make_interval(months => ${USAGE_MONTHS - 1})`
         )
@@ -227,6 +239,7 @@ export const getKeysByOwner = async (params: GetKeysByOwnerParams) => {
       keys: rows.map(row => ({
         key: row.key,
         name: row.name,
+        owner: row.owner,
         // Legacy MySQL epoch-second shape preserved for API consumers
         created: Math.floor(row.created.getTime() / 1e3)
       })),
