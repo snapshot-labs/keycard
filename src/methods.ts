@@ -235,15 +235,26 @@ export const getKeysByOwner = async (params: GetKeysByOwnerParams) => {
         )
       );
 
+    // Admins only get a hash of other owners' keys, never a usable key
+    const ownKeys = new Set(
+      rows
+        .filter(row => row.owner.toLowerCase() === auth.owner.toLowerCase())
+        .map(row => row.key)
+    );
+    const toVisible = (key: string) => (ownKeys.has(key) ? key : sha256(key));
+
     return {
       keys: rows.map(row => ({
-        key: row.key,
+        key: toVisible(row.key),
         name: row.name,
         owner: row.owner,
         // Legacy MySQL epoch-second shape preserved for API consumers
         created: Math.floor(row.created.getTime() / 1e3)
       })),
-      usage: { daily, monthly }
+      usage: {
+        daily: daily.map(row => ({ ...row, key: toVisible(row.key) })),
+        monthly: monthly.map(row => ({ ...row, key: toVisible(row.key) }))
+      }
     };
   } catch (err) {
     capture(err, { context: { from: params?.from, alias: params?.alias } });
