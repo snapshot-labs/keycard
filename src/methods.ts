@@ -5,8 +5,8 @@ import { capture } from '@snapshot-labs/snapshot-sentry';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { admins, limits } from './config.json';
 import { db } from './db';
-import { isAliasOf } from './helpers/aliases';
 import { recoverSigner, SignedType } from './helpers/eip712';
+import { hasPublicProfile, isAliasOf } from './helpers/hub';
 import {
   currentDate,
   currentMonth,
@@ -291,6 +291,8 @@ export const createKey = async (params: CreateKeyParams) => {
 
     const auth = await verifyOwner(params, 'CreateKey');
     if ('error' in auth) return auth;
+    if (!(await hasPublicProfile(auth.owner)))
+      return { error: 'Profile with a name and X required', code: 403 };
 
     const ownerKeys = await getOwnerKeys(auth.owner);
     // Also rejects a replayed signature, as it carries the same name

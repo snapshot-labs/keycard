@@ -39,6 +39,7 @@ const TYPES = {
 const OWNER = '0x220bc93D88C0aF11f1159eA89a885d5ADd3A7Cf6';
 
 const registered = new Set<string>();
+let profile: { name: string; twitter: string | null } | null;
 let hub: http.Server;
 
 async function send(
@@ -79,12 +80,14 @@ beforeAll(done => {
       let body = '';
       req.on('data', chunk => (body += chunk));
       req.on('end', () => {
-        const { address, alias } = JSON.parse(body).variables;
+        const { query, variables } = JSON.parse(body);
+        const { address, alias } = variables;
         const aliases = registered.has(`${address}:${alias}`.toLowerCase())
           ? [{ address, alias }]
           : [];
+        const data = query.includes('user(') ? { user: profile } : { aliases };
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ data: { aliases } }));
+        res.end(JSON.stringify({ data }));
       });
     })
     .listen(3078, done);
@@ -92,6 +95,7 @@ beforeAll(done => {
 
 beforeEach(async () => {
   registered.clear();
+  profile = { name: 'Alice', twitter: 'alice' };
   await db.delete(keys).where(eq(keys.owner, OWNER));
 });
 
@@ -134,6 +138,21 @@ describe('POST / { method: create_key }', () => {
 
     expect(response.status).toBe(403);
     expect(response.body.error.data).toContain('Too many keys');
+  });
+
+  it.each([
+    ['no profile', null],
+    ['no X handle', { name: 'Alice', twitter: null }],
+    ['a blank name', { name: ' ', twitter: 'alice' }]
+  ])('rejects an owner with %s', async (_, ownerProfile) => {
+    profile = ownerProfile;
+
+    const response = await createKey(registeredWallet(), 'my app');
+
+    expect(response.status).toBe(403);
+    expect(response.body.error.data).toContain(
+      'Profile with a name and X required'
+    );
   });
 
   it('rejects an invalid name', async () => {
